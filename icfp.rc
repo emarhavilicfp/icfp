@@ -1,0 +1,10 @@
+#[link(name = "icfp", vers = "0.0")];
+
+#[warn(no_vecs_not_implicitly_copyable)];
+
+// Add your modules here, corresponding with your filenames.
+// REMEMBER TO ADD YOUR .rs FILES IN THE MAKEFILE TOO!
+// If you want to add subdirectories, make like:
+// mod shits { mod shit1; mod shit2; }
+
+mod hello;
