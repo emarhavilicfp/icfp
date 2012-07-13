@@ -16,3 +16,4 @@ use std;
 mod hello;
 
 mod board;
+mod pattern;

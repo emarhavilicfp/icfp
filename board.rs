@@ -9,8 +9,8 @@ enum square {
     wall,
     rock,
     lambda,
-    closed_lift,
-    open_lift,
+    lift_c,
+    lift_o,
     earth,
     empty
 }
@@ -22,10 +22,10 @@ impl of to_str::to_str for square {
           wall { "#" }
           rock { "*" }
           lambda { "\\" }
-          closed_lift { "L" }
-          open_lift { "O" }
+          lift_c { "L" }
+          lift_o { "O" }
           earth { "." }
-          empty { " " } 
+          empty { " " }
         }
     }
 }
@@ -36,8 +36,8 @@ fn square_from_char(c: char) -> square {
       '#'  { wall }
       '*'  { rock }
       '\\' { lambda }
-      'L'  { closed_lift }
-      'O'  { open_lift }
+      'L'  { lift_c }
+      'O'  { lift_o }
       '.'  { earth }
       ' '  { empty }
       _ {
@@ -47,7 +47,28 @@ fn square_from_char(c: char) -> square {
     }
 }
 
-fn read_board_grid(+in: io::reader) -> ~[~[square]] {
+type grid = ~[~[square]];
+
+fn safe(g: grid, r: uint, c: uint) -> bool {
+    if r == 0 || c == 0 || c == g[0u].len() - 1u {
+        true
+    } else {
+        !(g[r-1][c] == rock
+          || (g[r-1][c-1] == rock
+              && (g[r][c-1] == rock || g[r][c-1] == lambda))
+          || (g[r-1][c+1] == rock
+              && (g[r][c+1] == rock)))
+    }
+}
+
+fn safely_passable(g: grid, r: uint, c: uint) -> bool {
+    alt g[r][c] {
+      rock | wall | lift_c { false }
+      _ { safe(g,r,c) }
+    }
+}
+
+fn read_board_grid(+in: io::reader) -> grid {
     let mut grid = ~[];
     for in.each_line |line| {
         let mut row = ~[];
