@@ -1,0 +1,78 @@
+
+// In each of these rules, R is intendend to be navigable-to through safe
+// moves. The moves indicate a sequence that navigates the hazard in some way.
+// Sometimes, the sequence indicates merely how to get through, sometimes,
+// it indicates how to leave the situation as reversible as possible.
+
+// We need a separate forward and backward cost.
+
+// R: accessible spot (adjacent to a "safe" spot at least)
+// E: eatable (\ or .)
+// P: passable (\ or . or empty space)
+// >: fall-to-the-rightable (* or \)
+// <: fall-to-the-leftable (* or flipped \)
+// S: solid (* or #)
+// \: lambda, only if not flipped
+// |: lambda, maybe flipped
+//  : empty space
+// X: anything other than empty space
+// ?: anything
+
+E* //up through falling boulder
+R<
+----
+u 8
+====
+??* //away from falling boulder
+ER<
+----
+l 4
+====
+*? //dislodge boulder above
+EP
+R?
+----
+urlu 4
+====
+?*? //shove aside boulder above
+PER
+----
+llru 4
+====
+**? //under a couple boulders
+EER
+SS
+----
+ll 2 //you can go back
+====
+***?
+EEER
+XX>
+----
+lll 6 //you can go back, probably
+====
+R*
+?X
+----
+r 4 //bombs away!
+====
+*EE
+**E
+S>R
+??
+----
+uuwll 6 //this dumps some boulders
+====
+?E
+*R
+\E
+ES
+----
+DUUDLDD 0 //awesome
+====
+*RE
+\E?
+ES?
+----
+durldld 0
+====
