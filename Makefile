@@ -1,7 +1,7 @@
 CFLAGS=--static
 LDFLAGS=-lpthread -lrt -ldl
 
-icfp: static
+all: static
 
 # Remember to add modules for your .rs files in icfp.rc too!
 static: icfp.rc hello.rs
