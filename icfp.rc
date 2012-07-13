@@ -1,4 +1,8 @@
-#[link(name = "icfp", vers = "0.0")];
+#[link(name = "icfp",
+       vers = "0.0",
+       url = "https://github.com/emarhavilicfp/icfp")];
+
+#[comment = "An ICFP attempt in Rust by Emarhavil Heavy Industries"];
 
 #[warn(no_vecs_not_implicitly_copyable)];
 
