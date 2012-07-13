@@ -1,78 +1,89 @@
 
-// In each of these rules, R is intendend to be navigable-to through safe
-// moves. The moves indicate a sequence that navigates the hazard in some way.
-// Sometimes, the sequence indicates merely how to get through, sometimes,
-// it indicates how to leave the situation as reversible as possible.
+; In each of these rules, R is intendend to be navigable-to through safe
+; moves. The moves indicate a sequence that navigates the hazard in some way.
+; Sometimes, the sequence indicates merely how to get through, sometimes,
+; it indicates how to leave the situation as reversible as possible.
 
-// We need a separate forward and backward cost.
+; We need a separate forward and backward cost.
 
-// R: accessible spot (adjacent to a "safe" spot at least)
-// E: eatable (\ or .)
-// P: passable (\ or . or empty space)
-// >: fall-to-the-rightable (* or \)
-// <: fall-to-the-leftable (* or flipped \)
-// S: solid (* or #)
-// \: lambda, only if not flipped
-// |: lambda, maybe flipped
-//  : empty space
-// X: anything other than empty space
-// ?: anything
+; R: accessible spot (adjacent to a "safe" spot at least)
+; E: eatable (\ or .)
+; P: passable (\ or . or empty space)
+; >: fall-to-the-rightable (* or \)
+; <: fall-to-the-leftable (* or flipped \)
+; S: solid (* or #)
+; \: lambda, only if not flipped
+; |: lambda, maybe flipped
+; _: empty space (or a safe accessible spot, turned into empty space)
+; X: anything other than empty space
+; ?: anything
 
-E* //up through falling boulder
-R<
+
+
+
+
+E*   ;  * ;up through falling boulder
+R<   ;#R*
 ----
 u 8
-====
-??* //away from falling boulder
-ER<
+
+? * ;  * ;away from falling boulder
+ER< ; R*
 ----
 l 4
-====
-*? //dislodge boulder above
-EP
-R?
+
+
+
+*? ; ##*## ;dislodge boulder above
+EP ; .#...
+R? ; ..R..
 ----
 urlu 4
-====
-?*? //shove aside boulder above
-PER
+
+?*? ; ##*## ;shove aside boulder above
+PER ; ...R.
 ----
 llru 4
-====
-**? //under a couple boulders
-EER
-SS
+
+
+
+
+**? ; #**  ;under a couple boulders
+EER ; #\.R
+SS_ ; ###
 ----
-ll 2 //you can go back
-====
-***?
-EEER
-XX>
+ll 2 ;you can go back
+
+***? ; #***
+EEER ; #\..R
+XX>_ ; ###*
 ----
-lll 6 //you can go back, probably
-====
-R*
-?X
+lll 6 ;you can go back, probably
+
+
+
+R*_  ; R* .
+?X_  ; ## .
 ----
-r 4 //bombs away!
-====
-*EE
-**E
-S>R
-??
+r 8 ;bombs away!
+
+
+*PP  ; *..
+**P  ; **.
+S>R  ; **R
+---- ; ####
+uuwll 12 ;this dumps some boulders
+
+
+?E  ; # .
+*R  ; #*R
+\E  ; #\.
+ES  ; #\#
 ----
-uuwll 6 //this dumps some boulders
-====
-?E
-*R
-\E
-ES
-----
-DUUDLDD 0 //awesome
-====
-*RE
-\E?
-ES?
+DUUDLDD 0 ;awesome
+
+*RE ; #*R.
+\E? ; #\..
+ES? ; #\#.
 ----
 durldld 0
-====
