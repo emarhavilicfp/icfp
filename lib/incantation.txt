@@ -1,0 +1,28 @@
+# Compile the runtime.
+
+g++ -c -g -I. -Iisaac -Iarch/i386/ -Ibigint -Isync -Iuthash -Iutil -Ivg -I../libuv/include `find -type f | grep -v 64 | grep -v msvc | grep -v '\.h$' | grep -v '\.o$' | grep -v rustrt.def.in | grep -v morestack`
+
+# Assemble the runtime.
+
+ld -r -o rustrt.o `find | grep '\.o$' | grep -v morestack`
+objcopy -L __morestack rustrt.o rustrt.o
+
+# Compile morestack separately.
+
+gcc -c ./arch/i386/morestack.S
+
+# Compile core.
+
+rustc -c core.rc
+objcopy -W rust_abi_version core.o core.o
+
+# Compile std.
+
+rustc -c std.rc
+objcopy -W rust_abi_version std.o std.o
+
+# Compile your source.
+
+rustc -c hello.rs
+
+g++ --static hello.o rust-0.3/src/libcore/core.o rust-0.3/src/rt/rustrt.o rust-0.3/src/rt/libmorestack.o -lpthread  -lrt -ldl
