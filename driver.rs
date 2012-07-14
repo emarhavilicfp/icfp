@@ -79,7 +79,9 @@ fn human(init: state::state) {
         alt (res) {
             some(res_) {
                 alt (res_) {
-                    stepped(newstate) { vec::push(hist, copy newstate); }
+                    stepped(newstate) {
+                        vec::push(hist, extract_step_result(newstate));
+                    }
                     endgame(score) { io::println(#fmt("Finished with %d points.", score)); break; }
                     oops { io::println("Oops.  Bye."); break; }
                 }

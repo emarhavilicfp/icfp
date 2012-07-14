@@ -303,9 +303,16 @@ fn read_board(+in: io::reader) -> state {
 }
 
 enum step_result {
-    stepped(state),
+    stepped(@mut option<state>),
     endgame(int), /* points */
     oops /* accidental death or illegal move */
+}
+
+fn extract_step_result(x: @mut option<state>) -> state {
+    let mut shit = none;
+    *x <-> shit;
+    if shit.is_none() { fail "Can't extract_step_result: already 'none'!"; }
+    option::unwrap(shit)
 }
 
 impl extensions for state {
@@ -454,7 +461,7 @@ impl extensions for state {
         }
 
         /* Here we go! */
-        ret stepped({
+        ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
 
@@ -466,7 +473,7 @@ impl extensions for state {
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
             score: score_
-        });
+        }));
     }
 }
 
@@ -493,9 +500,13 @@ mod test {
     fn bouldering_problem() {
         let s = "#####\n# R #\n# * #\n#   #\n#####\n";
         let mut b = read_board(io::str_reader(s));
-        b = alt b.step(W, false) { stepped(b) { copy b } _ { fail } };
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
         assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
-        b = alt b.step(W, false) { stepped(b) { copy b } _ { fail } };
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
         assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }
 }

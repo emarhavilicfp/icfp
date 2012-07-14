@@ -14,18 +14,19 @@ type path = ~[state::move];
 
 
 
-/* XXX: This has a lot of copy.  It would be nice if we could have fewer copy. */
 fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
+    // TODO One copy left. Even Ben couldn't figure out how to get rid of it.
     let mut st_ = copy st;
     for p.each |the_move| {
             alt st_.step(the_move, strict) {
               state::stepped(st__) {
-                st_ = copy st__;
+                st_ = state::extract_step_result(st__);
               }
-              res { ret copy res }
+              state::endgame(score) { ret state::endgame(score) }
+              state::oops { ret state::oops }
           }
     }
-    ret state::stepped(st_);
+    ret state::stepped(@mut some(st_));
 }
 
 fn genpaths(b: state::grid, src: state::coord,
@@ -51,9 +52,9 @@ fn genpaths(b: state::grid, src: state::coord,
 }
 
 fn genpath_restart(b: state::grid, src: state::coord,
-                   dests: ~[state::coord], v: ~[~[mut (bool, option<state::move>)]],
+                   dests: ~[state::coord], +v: ~[~[mut (bool, option<state::move>)]],
                    bound: ~[boundary_element]) -> (option<path>, path_state) {
-    let mut visited = copy v;
+    let mut visited = v;
     let mut boundary = bound;
     let (x, y) = src;
     visited[y-1][x-1] = (true, some(state::W));
