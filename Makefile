@@ -4,7 +4,16 @@ MODE ?= dynamic
 
 all: $(MODE)
 
-ICFP_SRC = icfp.rc driver.rs state.rs path.rs pattern.rs evaluate.rs dlist.rs
+ICFP_SRC = icfp.rc \
+	   driver.rs \
+	   hello.rs \
+	   state.rs \
+	   path.rs \
+	   pattern.rs \
+	   evaluate.rs \
+	   dlist.rs \
+	   heuristics.rs \
+	   drive.rs
 
 # Remember to add modules for your .rs files in icfp.rc too!
 static: $(ICFP_SRC)
