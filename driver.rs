@@ -15,7 +15,7 @@ fn main(args: ~[str]) {
     let mut hist = ~[state::read_board(io::str_reader(map))];
     let input = io::stdin();
 
-    io::println(hist[0].grid.to_str());
+    io::println(hist[0].to_str());
     while (!input.eof()) {
         let res;
         let state = copy hist[0];
@@ -35,7 +35,7 @@ fn main(args: ~[str]) {
                 let mv = vec::shift(robotplan);
                 res = some(state.step(mv, false));
             }
-            '\n' { res = none; io::println(state.grid.to_str()); }
+            '\n' { res = none; io::println(state.to_str()); }
             _ { again; }
         }
 
