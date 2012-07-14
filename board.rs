@@ -16,7 +16,24 @@ enum square {
 }
 
 type grid = ~[~[square]];
+type coord = (uint,uint);
 
+// TODO: add a record type for board, with playerpos, rockslist, and all that
+enum move {
+    U, D, L, R, W, A
+}
+
+fn flip_move(m: move) -> move {
+    alt m { L {R} R {L} _ {m} }
+}
+
+fn move_from_char(c: char) -> move {
+    alt c {
+        'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A }
+        'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A }
+        _ { fail; /* XXX do something more reasonable here */ }
+    }
+}
 impl of to_str::to_str for square {
     fn to_str() -> str {
         alt self {
@@ -56,7 +73,6 @@ fn square_from_char(c: char) -> square {
       }
     }
 }
-
 
 fn safe(g: grid, r: uint, c: uint) -> bool {
     if r == 0 || c == 0 || c == g[0u].len() - 1u {

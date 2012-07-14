@@ -13,37 +13,34 @@
 ; <: fall-to-the-leftable (* or flipped \)
 ; S: solid (* or #)
 ; \: lambda, only if not flipped
-; |: lambda, maybe flipped
 ; _: empty space (or a safe accessible spot, turned into empty space)
 ; X: anything other than empty space
 ; ?: anything
 
 
 
-
-
 E*   ;  * ;up through falling boulder
 R<   ;#R*
-----
-u 8
+
+!u $$$$$$$$
 
 ? * ;  * ;away from falling boulder
 ER< ; R*
-----
-l 4
+
+!l $$$$
 
 
 
 *? ; ##*## ;dislodge boulder above
 EP ; .#...
 R? ; ..R..
-----
-urlu 4
+
+!urlu $$$$
 
 ?*? ; ##*## ;shove aside boulder above
 PER ; ...R.
-----
-llru 4
+
+!llru $$$$
 
 
 
@@ -51,39 +48,39 @@ llru 4
 **? ; #**  ;under a couple boulders
 EER ; #\.R
 SS_ ; ###
-----
-ll 2 ;you can go back
+
+!ll $$ ;you can go back
 
 ***? ; #***
 EEER ; #\..R
 XX>_ ; ###*
-----
-lll 6 ;you can go back, probably
+
+!lll $$$$$$ ;you can go back, probably
 
 
 
 R*_  ; R* .
 ?X_  ; ## .
-----
-r 8 ;bombs away!
+
+!r $$$$$$$ ;bombs away!
 
 
 *PP  ; *..
 **P  ; **.
 S>R  ; **R
----- ; ####
-uuwll 12 ;this dumps some boulders
+     ; ###
+!uuwll $$$$$$$$$$$$ ;this dumps some boulders
 
 
 ?E  ; # .
 *R  ; #*R
 \E  ; #\.
 ES  ; #\#
-----
-DUUDLDD 0 ;awesome
+
+!duudldd $ ;awesome
 
 *RE ; #*R.
 \E? ; #\..
 ES? ; #\#.
-----
-durldld 0
+
+!durldld $
