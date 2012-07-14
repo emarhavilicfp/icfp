@@ -70,9 +70,9 @@ impl of to_str::to_str for square {
 
 impl of to_str::to_str for grid {
     fn to_str() -> str {
-        str::connect(do self.map |row| {
+        str::connect(vec::reversed(do self.map |row| {
             str::concat(do row.map |sq| { sq.to_str() })
-        }, "\n") + "\n"
+        }), "\n") + "\n"
     }
 }
 
@@ -121,6 +121,7 @@ fn read_board_grid(+in: io::reader) -> grid {
         }
         vec::push(grid, row)
     }
+    grid = vec::reversed(grid);
     let width = grid[0].len();
     for grid.each |row| { assert row.len() == width }
     grid
