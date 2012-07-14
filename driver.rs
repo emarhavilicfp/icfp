@@ -32,7 +32,7 @@ fn main(args: ~[str]) {
             }
             'n' {
                 let robotplan = play_game(copy state);
-                let mv = vec::shift(robotplan);
+                let mv = vec::head(robotplan);
                 res = some(state.step(mv, false));
             }
             '\n' { res = none; io::println(state.to_str()); }
