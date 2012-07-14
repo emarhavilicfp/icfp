@@ -45,7 +45,7 @@ impl extensions for grid {
             for row.each |s| { f(s) }
         }
     }
-    
+
     /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
         for self.eachi |r, row| {
@@ -207,11 +207,12 @@ fn read_board_grid(+in: io::reader) -> grid {
 
 enum step_result {
     stepped(state),
-    endgame(int) /* points */
+    endgame(int), /* points */
+    oops /* accidental death or illegal move */
 }
 
 impl extensions for state {
-    fn step(move: move) -> step_result {
+    fn step(move: move, strict: bool) -> step_result {
         let mut score_ = self.score - 1;
         let mut lambdas_ = self.lambdas;
         let mut lambdasleft_ = self.lambdasleft;
@@ -234,7 +235,7 @@ impl extensions for state {
 
         /* Is the move valid? */
         let (x_, y_) = alt grid_.at((xp, yp)) {
-          empty | earth { /* We're good. */ (xp, yp) }
+          empty | earth | bot { /* We're good. */ (xp, yp) }
           lambda {
             lambdas_ = lambdas_ + 1;
             lambdasleft_ = lambdasleft_ - 1;
@@ -254,15 +255,18 @@ impl extensions for state {
                 grid_.set((x-2, yp), rock);
                 (xp, yp)
             } else {
+                if strict { ret oops }
                 (x, y)
             }
           }
-          _ { (x, y) }
+
+          _ { if strict {ret oops}; (x, y) }
         };
+
 
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
-        
+
         let placerock = fn @( &grid_: grid, c: coord) {
             /* recall x_ and y_ at this point are where the robot has moved to */
             let (x, y) = c;
@@ -271,7 +275,7 @@ impl extensions for state {
             }
             grid_[y-1][x-1] = rock;
         };
-        
+
         /* Phase two -- update the map */
         do grid.squares_i |sq, c| {
           let (sx, sy) = c;
@@ -306,24 +310,27 @@ impl extensions for state {
             _ { }
           }
         }
-        
+
         /* Have we won? */
         if grid_.at((x_, y_)) == lift_o {
             ret endgame(score_ + lambdas_ * 50);
         }
-        
+
         /* Check to see if rocks fall *after* we could have successfully taken the lambda lift. */
         if *rocks_fall {
+            if strict { ret oops; }
             ret endgame(score_);
         }
-        
+
         /* XXX update water */
-        
+
+
+
         /* Here we go! */
         ret stepped({
             flooding: self.flooding,
             waterproof: self.waterproof,
-            
+
             grid: grid_,
             robotpos: (x_, y_),
             water: self.water,
