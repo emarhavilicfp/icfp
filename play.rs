@@ -21,7 +21,7 @@ fn path_for_each(p: path::path, blk: fn(state::move) -> bool) { p.each(blk) }
 
 fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
     alt path::apply(_ml, _s, false) {
-        state::stepped(state) { some(copy state) } // XXX remove copy
+        state::stepped(state) { some(state::extract_step_result(state)) }
         state::endgame(*) | state::oops { none } // XXX fix endgame
     }
 }

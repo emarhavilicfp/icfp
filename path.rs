@@ -14,25 +14,28 @@ type path = ~[state::move];
 
 
 
-/* XXX: This has a lot of copy.  It would be nice if we could have fewer copy. */
 fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
+    // TODO One copy left. Even Ben couldn't figure out how to get rid of it.
     let mut st_ = copy st;
     for p.each |the_move| {
             alt st_.step(the_move, strict) {
               state::stepped(st__) {
-                st_ = copy st__;
+                st_ = state::extract_step_result(st__);
               }
-              res { ret copy res }
+              state::endgame(score) { ret state::endgame(score) }
+              state::oops { ret state::oops }
           }
     }
-    ret state::stepped(st_);
+    ret state::stepped(@mut some(st_));
 }
 
 fn genpaths(b: state::grid, src: state::coord,
             dests: ~[state::coord]) -> (option<path>, path_state) {
     let (x, y) = src;
     let mut visited: ~[~[mut(bool, option<state::move>)]] = ~[];
-    vec::grow(visited, b.len(), vec::from_elem(b[0].len(), (false, none)));
+    for iter::repeat(b.len()) {
+        vec::push(visited, vec::from_elem(b[0].len(), (false, none)));
+    }
     visited[y-1][x-1] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
     let mut boundary = ~[(src, state::W)];
@@ -51,9 +54,9 @@ fn genpaths(b: state::grid, src: state::coord,
 }
 
 fn genpath_restart(b: state::grid, src: state::coord,
-                   dests: ~[state::coord], v: ~[~[mut (bool, option<state::move>)]],
+                   dests: ~[state::coord], +v: ~[~[mut (bool, option<state::move>)]],
                    bound: ~[boundary_element]) -> (option<path>, path_state) {
-    let mut visited = copy v;
+    let mut visited = v;
     let mut boundary = bound;
     let (x, y) = src;
     visited[y-1][x-1] = (true, some(state::W));
@@ -148,7 +151,7 @@ fn test_genpath() {
     import vec::*;
 
     let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
-    let (p, _) = genpaths(state.grid,(7,6),~[(2,6)]);
+    let (p, _) = genpaths(state.grid,(6,7),~[(6,2)]);
     assert p.is_some();
     let plen = option::get(p).len();
     assert plen == 13;

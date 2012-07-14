@@ -13,8 +13,13 @@ enum square {
     lift_c,
     lift_o,
     earth,
-    empty
+    empty,
+    // If you add a square type, remember to update the number in
+    // hash_keys and gen_hashkeys.
 }
+
+type hash_val = u32;
+type hash_keys = @~[~[[hash_val]/8]];
 
 type grid = ~[mut ~[mut square]];
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
@@ -22,6 +27,9 @@ type state = {
     /* Intrinsics */
     flooding: int,
     waterproof: int,
+
+    hash: hash_val,
+    hash_keys: hash_keys,
 
     /* These changes periodically. */
     grid: grid, /* mut? */
@@ -39,6 +47,14 @@ enum move {
     U, D, L, R, W, A
 }
 
+impl extensions for hash_keys {
+    fn get(c: coord, s: square) -> hash_val {
+        let (y, x) = c;
+        let (x, y) = (x - 1, y - 1);
+        self[x][y][s as uint]
+    }
+}
+
 impl extensions for grid {
     fn squares(f: fn(square)) {
         for self.each |row| {
@@ -48,9 +64,20 @@ impl extensions for grid {
 
     /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
+        // FIXME (#13): this should follow the loop protocol.
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (c+1, r+1)) }
         }
+    }
+
+    fn map_squares<T>(f: fn(square) -> T) -> ~[~[T]] {
+        let mut res = ~[];
+        for self.each |row| {
+            let mut r = ~[];
+            for row.each |s| { vec::push(r, f(s)) }
+            vec::push(res, r);
+        }
+        res
     }
 
     fn foldl<T: copy>(z: T, f: fn(T, square, coord) -> T) -> T {
@@ -78,6 +105,30 @@ impl extensions for grid {
                 vec::append_one(l, co)
             } else { l }
         })
+    }
+
+    fn hash(keys: hash_keys) -> hash_val {
+        let mut hash = 0;
+        assert keys.len() == self.len();
+        assert keys[0].len() == self[0].len();
+        do self.squares_i |s, c| {
+            hash ^= keys.get(c, s);
+        }
+        hash
+    }
+
+    fn gen_hashkeys() -> hash_keys {
+        let r = rand::rng();
+        @self.map_squares(|_s| [
+            r.gen_u32(), /* bot    */
+            r.gen_u32(), /* wall   */
+            r.gen_u32(), /* rock   */
+            r.gen_u32(), /* lambda */
+            r.gen_u32(), /* lift_c */
+            r.gen_u32(), /* lift_o */
+            r.gen_u32(), /* earth  */
+            r.gen_u32(), /* empty  */
+        ]/_)
     }
 }
 
@@ -110,6 +161,20 @@ fn move_from_char(c: char) -> move {
         _ { fail; /* XXX do something more reasonable here */ }
     }
 }
+
+impl of to_str::to_str for move {
+    fn to_str() -> str {
+        alt self {
+            U { "U" }
+            D { "D" }
+            L { "L" }
+            R { "R" }
+            A { "A" }
+            W { "W" }
+        }
+    }
+}
+
 impl of to_str::to_str for square {
     fn to_str() -> str {
         alt self {
@@ -274,9 +339,14 @@ fn read_board(+in: io::reader) -> state {
     let mut (x_, yinv_) = option::get(robot);
     let robotpos = (x_, grid.len() - yinv_);
 
+    let hash_keys = grid.gen_hashkeys();
+    let hash = grid.hash(hash_keys);
+
     ret {
         flooding: flooding,
         waterproof: waterproof,
+        hash: hash,
+        hash_keys: hash_keys,
         grid: grid,
         robotpos: robotpos,
         water: water,
@@ -289,9 +359,16 @@ fn read_board(+in: io::reader) -> state {
 }
 
 enum step_result {
-    stepped(state),
+    stepped(@mut option<state>),
     endgame(int), /* points */
     oops /* accidental death or illegal move */
+}
+
+fn extract_step_result(x: @mut option<state>) -> state {
+    let mut shit = none;
+    *x <-> shit;
+    if shit.is_none() { fail "Can't extract_step_result: already 'none'!"; }
+    option::unwrap(shit)
 }
 
 impl extensions for state {
@@ -335,11 +412,13 @@ impl extensions for state {
             if xp == x + 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
                 grid_.set((x+2, yp), rock);
+                grid.set((x+2, yp), rock);
                 (xp, yp)
             } else
             if xp == x - 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
                 grid_.set((x-2, yp), rock);
+                grid.set((x-2, yp), rock);
                 (xp, yp)
             } else {
                 if strict { ret oops }
@@ -410,7 +489,7 @@ impl extensions for state {
               }
             }
             lift_c {
-              if self.lambdasleft == 0 {
+              if lambdasleft_ == 0 {
                   grid_.set((sx, sy), lift_o);
               }
             }
@@ -440,10 +519,12 @@ impl extensions for state {
         }
 
         /* Here we go! */
-        ret stepped({
+        // FIXME: we could use the FRU syntax here.
+        ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
-
+            hash: grid_.hash(self.hash_keys), // FIXME: incrementally update
+            hash_keys: self.hash_keys,
             grid: grid_,
             robotpos: (x_, y_),
             water: water_,
@@ -452,8 +533,15 @@ impl extensions for state {
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
             score: score_
-        });
+        }));
     }
+}
+
+// FIXME: we can't use state here, because it's not const.
+type transposition_table<T: copy> = std::map::hashmap<hash_val, T>;
+
+fn transposition_table<T: copy>() -> transposition_table<T> {
+    std::map::hashmap(|s: hash_val| s as uint, |a, b| a == b)
 }
 
 mod test {
@@ -479,9 +567,13 @@ mod test {
     fn bouldering_problem() {
         let s = "#####\n# R #\n# * #\n#   #\n#####\n";
         let mut b = read_board(io::str_reader(s));
-        b = alt b.step(W, false) { stepped(b) { copy b } _ { fail } };
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
         assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
-        b = alt b.step(W, false) { stepped(b) { copy b } _ { fail } };
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
         assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }
 }

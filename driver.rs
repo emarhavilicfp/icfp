@@ -44,14 +44,14 @@ fn human(init: state::state) {
     io::println(hist[0].to_str());
     while (!input.eof()) {
         let res;
-        let state = copy hist[0];
+        let state = copy hist[hist.len()-1];
         alt (input.read_char()) {
             'q' { res = some(state.step(A, false)); robot_plan = none; }
-            'w' { res = some(state.step(W, false)); robot_plan = none; }
-            'h' { res = some(state.step(L, false)); robot_plan = none; }
-            'j' { res = some(state.step(D, false)); robot_plan = none; }
-            'k' { res = some(state.step(U, false)); robot_plan = none; }
-            'l' { res = some(state.step(R, false)); robot_plan = none; }
+            ' ' { res = some(state.step(W, false)); robot_plan = none; }
+            'h' | 'a' { res = some(state.step(L, false)); robot_plan = none; }
+            'j' | 's' { res = some(state.step(D, false)); robot_plan = none; }
+            'k' | 'w' { res = some(state.step(U, false)); robot_plan = none; }
+            'l' | 'd' { res = some(state.step(R, false)); robot_plan = none; }
             'p' {
                 if hist.len() > 1 { vec::pop(hist); }
                 robot_plan = none; 
@@ -79,7 +79,9 @@ fn human(init: state::state) {
         alt (res) {
             some(res_) {
                 alt (res_) {
-                    stepped(newstate) { vec::push(hist, copy newstate); }
+                    stepped(newstate) {
+                        vec::push(hist, extract_step_result(newstate));
+                    }
                     endgame(score) { io::println(#fmt("Finished with %d points.", score)); break; }
                     oops { io::println("Oops.  Bye."); break; }
                 }
@@ -92,6 +94,9 @@ fn human(init: state::state) {
 
 fn robot(init: state::state) {
     import state::*;
-    let (_, end) = play::play_game(copy init);
-    io::println(end.to_str());
+    let (moves, _) = play::play_game(copy init);
+    for moves.each |m| {
+        io::print(m.to_str());
+    }
+    io::println("");
 }
