@@ -77,7 +77,7 @@ fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
     let mut accum = z;
     for g.eachi |y,row| {
         for row.eachi |x,square| {
-            accum = f(accum, square, (x,y));
+            accum = f(accum, square, (x+1,y+1));
         }
     }
     accum
