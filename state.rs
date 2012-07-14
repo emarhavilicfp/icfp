@@ -30,6 +30,7 @@ type state = {
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     underwater: int, /* how long we have been underwater */
     lambdas: int, /* how many lambdas we have collected */
+    lambdasleft: int, /* how many lambdas we have left */
     score: int,
     /* We probably need a list of rocks here. */
 };
@@ -44,7 +45,8 @@ impl extensions for grid {
             for row.each |s| { f(s) }
         }
     }
-
+    
+    /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (r+1, c+1)) }
@@ -212,7 +214,10 @@ impl extensions for state {
     fn step(move: move) -> step_result {
         let mut score_ = self.score - 1;
         let mut lambdas_ = self.lambdas;
+        let mut lambdasleft_ = self.lambdasleft;
+        let rocks_fall = @mut false; /* everybody dies -- delayed for later */
         let mut grid_ = copy self.grid;
+        let grid = copy self.grid; /* XXX point to original self.grid later if able */
         let (x, y) = self.robotpos;
 
         /* Phase one -- bust a move! */
@@ -232,9 +237,10 @@ impl extensions for state {
           empty | earth { /* We're good. */ (xp, yp) }
           lambda {
             lambdas_ = lambdas_ + 1;
+            lambdasleft_ = lambdasleft_ - 1;
             (xp, yp)
           }
-          lift_o { /* We've won. */
+          lift_o { /* We've won -- ILHoist.hoist away! */
             ret endgame(score_ + self.lambdas * 50)
           }
           rock {
@@ -256,12 +262,77 @@ impl extensions for state {
 
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
-
+        
+        let placerock = fn @( &grid_: grid, c: coord) {
+            /* recall x_ and y_ at this point are where the robot has moved to */
+            let (x, y) = c;
+            if x == x_ && y == (y_ - 1) {
+                *rocks_fall = true;
+            }
+            grid_[y-1][x-1] = rock;
+        };
+        
         /* Phase two -- update the map */
-        fail
-
-        /* Phase three -- check for ending conditions */
-        fail
+        do grid.squares_i |sq, c| {
+          let (sx, sy) = c;
+          alt sq {
+            rock {
+              if grid.at((sx, sy-1)) == empty {
+                  placerock(grid_, (sx, sy-1));
+              } else if grid.at((sx, sy-1)) == rock &&
+                        grid.at((sx+1, sy)) == empty &&
+                        grid.at((sx+1, sy-1)) == empty {
+                  placerock(grid_, (sx+1, sy-1));
+                  grid_.set((sx, sy), empty);
+              } else if grid.at((sx, sy-1)) == rock &&
+                        (grid.at((sx+1, sy)) != empty ||
+                         grid.at((sx+1, sy-1)) != empty) &&
+                        grid.at((sx-1, sy)) == empty &&
+                        grid.at((sx-1, sy-1)) == empty {
+                  placerock(grid_, (sx-1, sy-1));
+                  grid_.set((sx, sy), empty);
+              } else if grid.at((sx, sy-1)) == lambda &&
+                        grid.at((sx+1, sy)) == empty &&
+                        grid.at((sx+1, sy-1)) == empty {
+                  placerock(grid_, (sx+1, sy-1));
+                  grid_.set((sx, sy), empty);
+              }
+            }
+            lift_c {
+              if self.lambdasleft == 0 {
+                  grid_.set((sx, sy), lift_o);
+              }
+            }
+            _ { }
+          }
+        }
+        
+        /* Have we won? */
+        if grid_.at((x_, y_)) == lift_o {
+            ret endgame(score_ + lambdas_ * 50);
+        }
+        
+        /* Check to see if rocks fall *after* we could have successfully taken the lambda lift. */
+        if *rocks_fall {
+            ret endgame(score_);
+        }
+        
+        /* XXX update water */
+        
+        /* Here we go! */
+        ret stepped({
+            flooding: self.flooding,
+            waterproof: self.waterproof,
+            
+            grid: grid_,
+            robotpos: (x_, y_),
+            water: self.water,
+            nextflood: self.nextflood,
+            underwater: self.underwater,
+            lambdas: lambdas_,
+            lambdasleft: lambdasleft_,
+            score: score_
+        });
     }
 }
 
