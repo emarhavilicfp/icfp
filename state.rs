@@ -17,7 +17,7 @@ enum square {
 }
 
 type grid = ~[~[square]];
-type coord = (uint,uint);
+type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
 type state = {
     /* Intrinsics */
     flooding: option<int>,
@@ -29,7 +29,12 @@ type state = {
     water: int, /* not an option -- just 0 otherwise */
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     underwater: int, /* how long we have been underwater */
+    /* We probably need a list of rocks here. */
 };
+
+enum move {
+    U, D, L, R, W, A
+}
 
 fn grid_iter(g: grid, f: fn(square)) {
     for g.each() |row| {
@@ -39,15 +44,8 @@ fn grid_iter(g: grid, f: fn(square)) {
 
 fn grid_iter_i(g: grid, f: fn(square, coord)) {
     for g.eachi() |r, row| {
-        for row.eachi() |c, s| { f(s, (r, c)) }
+        for row.eachi() |c, s| { f(s, (r + 1, c + 1)) }
     }
-}
-
-
-
-// TODO: add a record type for board, with playerpos, rockslist, and all that
-enum move {
-    U, D, L, R, W, A
 }
 
 fn taxicab_distance(dest: coord, src: coord) {
