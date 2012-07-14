@@ -10,8 +10,7 @@ fn main(args: ~[str]) {
             fail "Must specify a board name";
         }
     
-        let map_res = io::read_whole_file_str(args[1]);
-        alt (map_res) {
+        alt (io::read_whole_file_str(args[1])) {
             ok (mm) { map = mm; }
             err(msg) { fail msg; }
         }
@@ -19,20 +18,14 @@ fn main(args: ~[str]) {
         map = str::from_bytes(io::stdin().read_whole_stream());
     }
 
-    signal::init();
-
-    let fun_res = os::getenv("ICFP_HUMAN");
-
-    let fun;
-
-    alt (fun_res) {
-        some (_) { fun = human; }
-        none { fun = robot; }
-    }
-
     let state = state::read_board(io::str_reader(map));
 
-    fun(state);
+    signal::init();
+
+    alt (os::getenv("ICFP_HUMAN")) {
+        some (_) { human(state); }
+        none { robot(state); }
+    }
 }
 
 fn human(init: state::state) {
