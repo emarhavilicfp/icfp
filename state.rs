@@ -126,6 +126,16 @@ impl of to_str::to_str for grid {
     }
 }
 
+impl of to_str::to_str for state {
+    fn to_str() -> str {
+        self.grid.to_str()
+         + "\n\nWater " + (int::str(self.water))
+         + "\nFlooding " + (int::str(self.flooding))
+         + "\nWaterproof " + (int::str(self.waterproof))
+         + "\n"
+    }
+}
+
 fn square_from_char(c: char) -> square {
     alt c  {
       'R'  { bot }
@@ -190,19 +200,69 @@ fn safely_passable(g: grid, r: uint, c: uint) -> bool {
     }
 }
 
-fn read_board_grid(+in: io::reader) -> grid {
+fn read_board(+in: io::reader) -> state {
+    let mut map_lines = "";
     let mut grid = ~[mut];
-    for in.each_line |line| {
+    let mut robot = none;
+
+    while (!in.eof()) {
+        let line = in.read_line();
+        if (line.len() == 0) {
+            break;
+        }
+        map_lines += line + "\n";
+    }
+
+    while (!in.eof()) {
+        let line = in.read_line();
+        let split = str::split_char_nonempty(line, ' ');
+        alt (split[0]) {
+            "Water" {
+                fail "WATER!";
+            }
+            _ { }
+        }
+    }
+
+    let map_reader = io::str_reader(map_lines);
+    let mut yinv = 0;
+    for map_reader.each_line |line| {
+        let mut x = 1;
         let mut row = ~[mut];
         for line.each_char |c| {
-            vec::push(row, square_from_char(c))
+            let sq = square_from_char(c);
+            if (sq == bot) {
+                alt (robot) {
+                    none { robot = some ((x, yinv)); }
+                    some(_) { fail; }
+                }
+            }
+            vec::push(row, sq);
+            x += 1;
         }
-        vec::push(grid, row)
+        vec::push(grid, row);
+        yinv += 1;
     }
     vec::reverse(grid);
+
     let width = grid[0].len();
     for grid.each |row| { assert row.len() == width }
-    grid
+
+    let mut (x_, yinv_) = option::get(robot);
+    let robotpos = (x_, width - yinv_);
+
+    ret {
+        flooding: 0,
+        waterproof: 0,
+        grid: grid,
+        robotpos: robotpos,
+        water: 0,
+        nextflood: 0,
+        underwater: 0,
+        lambdas: 0,
+        lambdasleft: 0,
+        score: 0,
+    }
 }
 
 enum step_result {
@@ -352,14 +412,13 @@ mod test {
     #[test]
     fn read_simple_board() {
         let s = #include_str("./maps/contest1.map");
-        read_board_grid(io::str_reader(s));
+        read_board(io::str_reader(s));
     }
 
     #[test]
     fn deparse() {
         let s = "####\nR*LO\n. ##\n";
-        let gr = read_board_grid(io::str_reader(s));
-        let s2 = gr.to_str();
+        let s2 = read_board(io::str_reader(s)).grid.to_str();
         assert s == s2;
     }
 }
