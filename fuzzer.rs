@@ -58,12 +58,19 @@ fn gen_state(m: uint, n: uint) -> state::state {
 
     let (grid, robotpos) = rand_grid(r, m, n);
 
+    let z = (0,0);
+
+    // TODO: implement trampoline fuzzing
+
     {flooding: rand_flooding(r),
      waterproof: rand_waterproof(r),
+     target: ~[z, z, z, z, z, z, z, z, z, z],
+     trampoline: ~[z, z, z, z, z, z, z, z, z, z],
      grid: grid,
      robotpos: robotpos,
      water: rand_water(r, m),
      nextflood: 0,
+     tramp_map: ~[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
      underwater: 0,
      lambdas: 0,
      lambdasleft: 0,

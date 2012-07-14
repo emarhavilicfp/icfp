@@ -13,13 +13,15 @@ enum square {
     lift_c,
     lift_o,
     earth,
+    trampoline(int),
+    target(int),
     empty,
     // If you add a square type, remember to update the number in
     // hash_keys and gen_hashkeys.
 }
 
 type hash_val = u32;
-type hash_keys = @~[~[[hash_val]/8]];
+type hash_keys = @~[~[[hash_val]/26]];
 
 type grid = {
     grid: ~[mut ~[mut square]],
@@ -31,12 +33,15 @@ type state = {
     /* Intrinsics */
     flooding: int,
     waterproof: int,
+    target: ~[coord],
+    trampoline: ~[coord],
 
     /* These changes periodically. */
     grid: grid, /* mut? */
     robotpos: coord,
     water: uint, /* not an option -- just 0 otherwise */
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
+    tramp_map: ~[int], /* trampoline[t] holds the target of t */
     underwater: int, /* how long we have been underwater */
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
@@ -48,11 +53,28 @@ enum move {
     U, D, L, R, W, A
 }
 
+impl extensions for square {
+    fn to_uint() -> uint {
+        alt self {
+            bot { 1u }
+            wall { 2u }
+            rock { 3u }
+            lambda { 4u }
+            lift_c { 5u } 
+            lift_o { 6u }
+            earth { 7u }
+            trampoline(i) { 7u + i as uint } /* i in range 1-9 */
+            target(i) { 16u + i as uint } /* i in range 1-9 */
+            empty { 25u }
+        }
+    }
+}
+
 impl extensions for hash_keys {
     fn get(c: coord, s: square) -> hash_val {
         let (y, x) = c;
         let (x, y) = (x - 1, y - 1);
-        self[x][y][s as uint]
+        self[x][y][s.to_uint()]
     }
 }
 
@@ -134,7 +156,7 @@ impl extensions for grid {
 impl extensions for ~[mut ~[mut square]] {
     fn gen_hashkeys() -> hash_keys {
 
-        pure fn f() -> [hash_val]/8 unchecked {
+        pure fn f() -> [hash_val]/26 unchecked {
             // FIXME: it'd be nice if the rng were created outside
             let r = rand::rng();
             [
@@ -145,8 +167,26 @@ impl extensions for ~[mut ~[mut square]] {
                 r.gen_u32(), /* lift_c */
                 r.gen_u32(), /* lift_o */
                 r.gen_u32(), /* earth  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
                 r.gen_u32(), /* empty  */
-            ]/_
+                ]/_
         }
         
         @self.map(|s| s.map(|_s| f()))
@@ -196,6 +236,10 @@ impl of to_str::to_str for move {
     }
 }
 
+fn tramp_to_str(i: int) -> str {
+    str::from_char((i + 'A' as int - 1) as char)
+}
+
 impl of to_str::to_str for square {
     fn to_str() -> str {
         alt self {
@@ -206,6 +250,8 @@ impl of to_str::to_str for square {
           lift_c { "L" }
           lift_o { "O" }
           earth { "." }
+          trampoline(i) { tramp_to_str(i) }
+          target(i) { int::str(i) }
           empty { " " }
         }
     }
@@ -226,6 +272,10 @@ impl of to_str::to_str for state {
          + "\n\nWater " + (uint::str(self.water))
          + "\nFlooding " + (int::str(self.flooding))
          + "\nWaterproof " + (int::str(self.waterproof))
+         + str::concat(vec::mapi(self.tramp_map, |i, t| {
+             if t == 0 || i == 0 { "" }
+             else { "\nTrampoline " + tramp_to_str(i as int) + " targets " + int::str(t) }
+         }))
          + "\n"
     }
 }
@@ -240,6 +290,8 @@ fn square_from_char(c: char) -> square {
       'O'  { lift_o }
       '.'  { earth }
       ' '  { empty }
+      'A' to 'I' { trampoline(c as int - 'A' as int + 1) }
+      '1' to '9' { target(c as int - '1' as int + 1) }
       _ {
         #error("invalid square: %?", c);
         fail
@@ -313,6 +365,7 @@ fn read_board(+in: io::reader) -> state {
     let mut water = 0u;
     let mut flooding = 0;
     let mut waterproof = 10;
+    let tramp_map = ~[mut 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     while (!in.eof()) {
         let line = in.read_line();
         let split = str::split_char_nonempty(line, ' ');
@@ -320,6 +373,11 @@ fn read_board(+in: io::reader) -> state {
             "Water" { water = option::get(uint::from_str(split[1])); }
             "Flooding" { flooding = option::get(int::from_str(split[1])); }
             "Waterproof" { waterproof = option::get(int::from_str(split[1])); }
+            "Trampoline" {
+                let tramp = str::char_at(split[1],0) as int - 'A' as int + 1;
+                let targ = str::char_at(split[3],0) as int - '1' as int + 1;
+                tramp_map[tramp] = targ;
+            }
             _ { fail "Bad metadata in map file"; }
         }
     }
@@ -371,13 +429,27 @@ fn read_board(+in: io::reader) -> state {
     };
     grid.hash = grid.rehash();
 
+    let z = (0,0);
+    let targets = ~[mut z, z, z, z, z, z, z, z, z, z];
+    let trampolines = ~[mut z, z, z, z, z, z, z, z, z, z];
+    do grid.squares_i |s, c| {
+        alt s {
+            target(i) { targets[i] = c; }
+            trampoline(i) { trampolines[i] = c; }
+            _ {}
+        }
+    }
+
     ret {
         flooding: flooding,
         waterproof: waterproof,
+        target: vec::from_mut(targets),
+        trampoline: vec::from_mut(trampolines),
         grid: grid,
         robotpos: robotpos,
         water: water,
         nextflood: flooding,
+        tramp_map: vec::from_mut(tramp_map),
         underwater: 0,
         lambdas: 0,
         lambdasleft: lambdasleft_,
@@ -406,6 +478,7 @@ impl extensions for state {
         let mut water_ = self.water;
         let mut nextflood_ = self.nextflood;
         let mut underwater_ = self.underwater;
+        let mut tramp_map_ = self.tramp_map;
         let rocks_fall = @mut false; /* everybody dies -- delayed for later */
         let mut grid_ = copy self.grid;
         let grid = copy self.grid; /* XXX point to original self.grid later if able */
@@ -451,6 +524,26 @@ impl extensions for state {
                 if strict { ret oops }
                 (x, y)
             }
+          }
+          trampoline(id) {
+            let targ = self.tramp_map[id];
+            let (x_, y_) = self.target[targ];
+
+            /* remove all trampolines for this target */
+            tramp_map_ = vec::mapi(tramp_map_, |i, targ_| {
+                if targ_ == targ {
+                    grid_.set(self.trampoline[i], empty);
+                    grid.set(self.trampoline[i], empty);
+                    0
+                }
+                else { targ_ }
+            });
+
+            /* remove the target */
+            grid_.set((x_, y_), empty);
+            grid.set((x_, y_), empty);
+
+            (x_, y_)
           }
 
           _ { if strict {ret oops}; (x, y) }
@@ -550,10 +643,14 @@ impl extensions for state {
         ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
+            target: self.target,
+            trampoline: self.trampoline,
+
             grid: grid_,
             robotpos: (x_, y_),
             water: water_,
             nextflood: nextflood_,
+            tramp_map: tramp_map_,
             underwater: underwater_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
