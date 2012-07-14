@@ -32,9 +32,6 @@ type state = {
     flooding: int,
     waterproof: int,
 
-    hash: hash_val,
-    hash_keys: hash_keys,
-
     /* These changes periodically. */
     grid: grid, /* mut? */
     robotpos: coord,
@@ -376,8 +373,6 @@ fn read_board(+in: io::reader) -> state {
     ret {
         flooding: flooding,
         waterproof: waterproof,
-        hash: grid.hash,
-        hash_keys: hash_keys,
         grid: grid,
         robotpos: robotpos,
         water: water,
@@ -549,13 +544,14 @@ impl extensions for state {
             ret endgame(score_);
         }
 
+        // FIXME: incremental update
+        grid_.hash = grid_.rehash();
+
         /* Here we go! */
         // FIXME: we could use the FRU syntax here.
         ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
-            hash: grid_.rehash(), // FIXME: incrementally update
-            hash_keys: self.hash_keys,
             grid: grid_,
             robotpos: (x_, y_),
             water: water_,
@@ -565,6 +561,10 @@ impl extensions for state {
             lambdasleft: lambdasleft_,
             score: score_
         }));
+    }
+
+    fn hash() -> hash_val {
+        self.grid.hash
     }
 
     fn rehash() -> hash_val {
@@ -616,15 +616,16 @@ mod test {
     fn bouldering_problem_hashes() {
         let s = "#####\n# R #\n# * #\n#   #\n#####\n";
         let mut b = read_board(io::str_reader(s));
+        assert b.hash() == b.rehash();
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        assert b.hash == b.rehash();
+        assert b.hash() == b.rehash();
         //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        assert b.hash == b.rehash();
+        assert b.hash() == b.rehash();
         //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }    
 }

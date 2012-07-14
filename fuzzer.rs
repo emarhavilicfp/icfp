@@ -58,13 +58,8 @@ fn gen_state(m: uint, n: uint) -> state::state {
 
     let (grid, robotpos) = rand_grid(r, m, n);
 
-    let hash_keys = grid.grid.gen_hashkeys();
-    let hash = grid.rehash();
-
     {flooding: rand_flooding(r),
      waterproof: rand_waterproof(r),
-     hash: hash,
-     hash_keys: hash_keys,
      grid: grid,
      robotpos: robotpos,
      water: rand_water(r, m),
