@@ -1,20 +1,37 @@
-import to_str::*;
-import state::*;
-import play::play_game;
-
 fn main(args: ~[str]) {
-    let map;
-    if (args.len() == 2) {
-        alt (io::read_whole_file_str(args[1])) {
-            result::ok (contents) { map = contents; }
-            result::err (msg) { fail msg; }
-        }
+    import result::*;
 
-        pattern::demo_pats(state::read_board(io::str_reader(map)).grid);
-    } else {
-        map = #include_str("./maps/contest1.map");
+    if (args.len() < 2) {
+        fail "Must specify a board name";
     }
-    let mut hist = ~[state::read_board(io::str_reader(map))];
+
+    let map_res = io::read_whole_file_str(args[1]);
+    let fun_res = os::getenv("ICFP_HUMAN");
+
+    let fun;
+    let state;
+
+    alt (fun_res) {
+        some (_) { fun = human; }
+        none { fun = robot; }
+    }
+
+    alt (map_res) {
+        ok (map) { state = state::read_board(io::str_reader(map)); }
+        err(msg) { fail msg; }
+    }
+
+    fun(state);
+}
+
+fn human(init: state::state) {
+    import to_str::*;
+    import state::*;
+    import play::play_game;
+
+    pattern::demo_pats(init.grid);
+
+    let mut hist = ~[copy init];
     let input = io::stdin();
 
     io::println(hist[0].to_str());
@@ -53,4 +70,10 @@ fn main(args: ~[str]) {
         }
     }
 
+}
+
+fn robot(init: state::state) {
+    import state::*;
+    let (_, end) = play::play_game(copy init);
+    io::println(end.to_str());
 }
