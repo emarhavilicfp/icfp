@@ -13,8 +13,6 @@ use std;
 // If you want to add subdirectories, make like:
 // mod shits { mod shit1; mod shit2; }
 
-// mod hello;
-
 mod driver;
 
 mod state;
