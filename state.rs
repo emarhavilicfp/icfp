@@ -31,6 +31,20 @@ type state = {
     underwater: int, /* how long we have been underwater */
 };
 
+fn grid_iter(g: grid, f: fn(square)) {
+    for g.each() |row| {
+        for row.each() |s| { f(s) }
+    }
+}
+
+fn grid_iter_i(g: grid, f: fn(square, coord)) {
+    for g.eachi() |r, row| {
+        for row.eachi() |c, s| { f(s, (r, c)) }
+    }
+}
+
+
+
 // TODO: add a record type for board, with playerpos, rockslist, and all that
 enum move {
     U, D, L, R, W, A
@@ -147,7 +161,7 @@ mod test {
         let s = #include_str("./maps/contest1.map");
         read_board_grid(io::str_reader(s));
     }
-    
+
     #[test]
     fn deparse() {
         let s = "####\nR*LO\n. ##\n";
