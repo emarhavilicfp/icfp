@@ -22,7 +22,7 @@ type state = {
     /* Intrinsics */
     flooding: int,
     waterproof: int,
-    
+
     /* These changes periodically. */
     grid: grid, /* mut? */
     robotpos: coord,
@@ -44,22 +44,27 @@ impl extensions for grid {
             for row.each |s| { f(s) }
         }
     }
-    
+
     fn squares_i(f: fn(square, coord)) {
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (r+1, c+1)) }
         }
     }
-    
+
     fn foldl<T: copy>(z: T, f: fn(T, square, coord) -> T) -> T {
         foldl(z, self, f)
     }
-    
+
     fn at(c: coord) -> square {
         let (x, y) = c;
         self[y-1][x-1]
     }
-    
+
+    fn in(c: coord) -> bool {
+        let (x, y) = c;
+        ret x>0 && y>0 && x<=self.len() && y<=self[0].len();
+    }
+
     fn set(c: coord, s: square) {
         let (x, y) = c;
         self[y-1][x-1] = s;
@@ -209,7 +214,7 @@ impl extensions for state {
         let mut lambdas_ = self.lambdas;
         let mut grid_ = copy self.grid;
         let (x, y) = self.robotpos;
-        
+
         /* Phase one -- bust a move! */
         let mut (xp, yp) = alt move {
           L { (x-1, y) }
@@ -221,7 +226,7 @@ impl extensions for state {
             ret endgame(score_ + self.lambdas * 25)
           }
         };
-        
+
         /* Is the move valid? */
         let (x_, y_) = alt grid_.at((xp, yp)) {
           empty | earth { /* We're good. */ (xp, yp) }
@@ -233,12 +238,12 @@ impl extensions for state {
             ret endgame(score_ + self.lambdas * 50)
           }
           rock {
-            if xp == x + 1 && yp == y && 
+            if xp == x + 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
                 grid_.set((x+2, yp), rock);
                 (xp, yp)
             } else
-            if xp == x - 1 && yp == y && 
+            if xp == x - 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
                 grid_.set((x-2, yp), rock);
                 (xp, yp)
@@ -248,13 +253,13 @@ impl extensions for state {
           }
           _ { (x, y) }
         };
-        
+
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
-        
+
         /* Phase two -- update the map */
         fail
-        
+
         /* Phase three -- check for ending conditions */
         fail
     }
