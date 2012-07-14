@@ -33,7 +33,7 @@ fn main(args: ~[str]) {
                 again;
             }
             'n' {
-                let robotplan = play_game(copy state);
+                let (robotplan, _newstate) = play_game(copy state);
                 let mv = vec::head(robotplan);
                 res = some(state.step(mv, false));
             }

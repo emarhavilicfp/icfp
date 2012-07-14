@@ -24,7 +24,7 @@ fn path_easy(_s: state::state, _fire: @mut option<brushfire>) -> option<path::pa
 fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>) -> option<path::path> { fail; }
 
 // Finds a path to the lambda that makes us happiest.
-fn get_next_lambda(-s: state::state) -> option<(state::state,path::path)> {
+fn get_next_lambda(s: state::state) -> option<(state::state,path::path)> {
     let easy_state = @mut none;
     let mut easy = path_easy(s, easy_state);
     let aggr_state = @mut none;
@@ -66,7 +66,7 @@ fn get_next_lambda(-s: state::state) -> option<(state::state,path::path)> {
 
 // Repeatedly finds lambdas (hopefully).
 fn play_game_prime(-s: state::state, -moves_so_far: dvec::dvec<state::move>)
-        -> ~[mut state::move] {
+        -> (~[const state::move], state::state) {
     // Attempt to do something next.
     let result = get_next_lambda(s);
     if result.is_some() {
@@ -79,10 +79,10 @@ fn play_game_prime(-s: state::state, -moves_so_far: dvec::dvec<state::move>)
         play_game_prime(newstate, moves_so_far)
     } else {
         // All done.
-        dvec::unwrap(moves_so_far) + [state::A]/_
+        (dvec::unwrap(moves_so_far) + [state::A]/_, s)
     }
 }
 
-fn play_game(-s: state::state) -> ~[mut state::move] {
+fn play_game(+s: state::state) -> (~[const state::move], state::state) {
     play_game_prime(s, dvec::dvec())
 }
