@@ -126,6 +126,16 @@ impl of to_str::to_str for grid {
     }
 }
 
+impl of to_str::to_str for state {
+    fn to_str() -> str {
+        self.grid.to_str()
+         + "\n\nWater " + (int::str(self.water))
+         + "\nFlooding " + (int::str(self.flooding))
+         + "\nWaterproof " + (int::str(self.waterproof))
+         + "\n"
+    }
+}
+
 fn square_from_char(c: char) -> square {
     alt c  {
       'R'  { bot }
