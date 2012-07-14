@@ -49,7 +49,7 @@ impl extensions for grid {
     /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
         for self.eachi |r, row| {
-            for row.eachi |c, s| { f(s, (r+1, c+1)) }
+            for row.eachi |c, s| { f(s, (c+1, r+1)) }
         }
     }
 
@@ -204,6 +204,7 @@ fn read_board(+in: io::reader) -> state {
     let mut map_lines = "";
     let mut grid = ~[mut];
     let mut robot = none;
+    let mut lambdasleft_ = 0;
 
     while (!in.eof()) {
         let line = in.read_line();
@@ -234,11 +235,14 @@ fn read_board(+in: io::reader) -> state {
         let mut row = ~[mut];
         for line.each_char |c| {
             let sq = square_from_char(c);
-            if (sq == bot) {
+            if sq == bot {
                 alt (robot) {
                     none { robot = some ((x, yinv)); }
                     some(_) { fail; }
                 }
+            }
+            if sq == lambda {
+                lambdasleft_ = lambdasleft_ + 1;
             }
             vec::push(row, sq);
             x += 1;
@@ -263,7 +267,7 @@ fn read_board(+in: io::reader) -> state {
         nextflood: flooding,
         underwater: 0,
         lambdas: 0,
-        lambdasleft: 0,
+        lambdasleft: lambdasleft_,
         score: 0,
     }
 }
@@ -329,11 +333,15 @@ impl extensions for state {
 
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
-
+        
+        /* Set it in the old one too, to 'catch' the boulder. */
+        grid.set((x, y), empty);
+        grid.set((x_, y_), bot);
+        
         let placerock = fn @( &grid_: grid, c: coord) {
             /* recall x_ and y_ at this point are where the robot has moved to */
             let (x, y) = c;
-            if x == x_ && y == (y_ - 1) {
+            if x == x_ && y == (y_ + 1) {
                 *rocks_fall = true;
             }
             grid_[y-1][x-1] = rock;
@@ -346,6 +354,7 @@ impl extensions for state {
             rock {
               if grid.at((sx, sy-1)) == empty {
                   placerock(grid_, (sx, sy-1));
+                  grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == rock &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
@@ -423,5 +432,15 @@ mod test {
         let s = "####\nR*LO\n. ##\n";
         let s2 = read_board(io::str_reader(s)).grid.to_str();
         assert s == s2;
+    }
+    
+    #[test]
+    fn bouldering_problem() {
+        let s = "#####\n# R #\n# * #\n#   #\n#####\n";
+        let mut b = read_board(io::str_reader(s));
+        b = alt b.step(W, false) { stepped(b) { copy b } _ { fail } };
+        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        b = alt b.step(W, false) { stepped(b) { copy b } _ { fail } };
+        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }
 }
