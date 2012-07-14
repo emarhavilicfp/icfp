@@ -64,7 +64,7 @@ impl extensions for grid {
 
     fn in(c: coord) -> bool {
         let (x, y) = c;
-        ret x>0 && y>0 && x<=self.len() && y<=self[0].len();
+        ret x>0 && y>0 && y<=self.len() && x<=self[0].len();
     }
 
     fn set(c: coord, s: square) {
