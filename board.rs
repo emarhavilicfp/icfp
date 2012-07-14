@@ -15,6 +15,18 @@ enum square {
     empty
 }
 
+enum move {
+    U, D, L, R, W, A
+}
+
+fn flip_move(m: move) -> move {
+    alt m { L {R} R {L} _ {m} }
+}
+
+fn mv_from_char(c: char) -> move {
+    alt c {'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A }}
+}
+
 impl of to_str::to_str for square {
     fn to_str() -> str {
         alt self {
