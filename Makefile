@@ -12,7 +12,7 @@ ICFP_SRC = icfp.rc \
 	   evaluate.rs \
 	   dlist.rs \
 	   heuristics.rs \
-	   drive.rs
+	   play.rs
 
 # Remember to add modules for your .rs files in icfp.rc too!
 static: $(ICFP_SRC)
