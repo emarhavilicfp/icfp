@@ -31,8 +31,9 @@ fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
 fn genpaths(b: state::grid, src: state::coord,
             dests: ~[state::coord]) -> (option<path>, path_state) {
     let (x, y) = src;
-    let visited: ~[~[mut (bool, option<state::move>)]] = ~[~[mut]];
-    visited[x][y] = (true, some(state::W));
+    let mut visited: ~[~[mut(bool, option<state::move>)]] = ~[];
+    vec::grow(visited, b.len(), vec::from_elem(b[0].len(), (false, none)));
+    visited[y-1][x-1] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
     let mut boundary = ~[(src, state::W)];
     while condition == none {
@@ -55,7 +56,7 @@ fn genpath_restart(b: state::grid, src: state::coord,
     let mut visited = copy v;
     let mut boundary = bound;
     let (x, y) = src;
-    visited[x][y] = (true, some(state::W));
+    visited[y-1][x-1] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
     while condition == none {
         boundary = propagate(b, boundary, visited);
@@ -74,7 +75,7 @@ fn genpath_restart(b: state::grid, src: state::coord,
 
 fn build_path(p: state::coord, visited: ~[~[mut (bool, option<state::move>)]]) -> path {
     let (x, y) = p;
-    alt visited[x][y] {
+    alt visited[y-1][x-1] {
       (false, _) {fail}
       (_, some(state::W)) {ret ~[];}
       (_, some(state::U)) {ret vec::append_one(build_path((x,y-1), visited), state::U);}
@@ -89,7 +90,7 @@ fn winner(dests: ~[state::coord],
           visited: ~[~[mut (bool, option<state::move>)]]) -> option<state::coord> {
     for dests.each() |p| {
         let (x, y) = p;
-        let (cond, _move) = visited[x][y];
+        let (cond, _move) = visited[y-1][x-1];
         if cond {
             ret some(p);
         }
@@ -106,7 +107,7 @@ fn propagate(b: state::grid, boundary_list: ~[boundary_element],
             let (neighbor, m) = t;
             alt neighbor {
               (x, y) {
-                let (cond, _move) = visited[x][y];
+                let (cond, _move) = visited[y-1][x-1];
                 if !cond {
                     vec::append_one(ret_list, (neighbor, m));
                     visited[x][y] = (true, some(m));
@@ -120,7 +121,7 @@ fn propagate(b: state::grid, boundary_list: ~[boundary_element],
 
 fn get_square(p: state::coord, b: state::grid) -> state::square {
     alt p {
-      (x, y) { b[x][y] }
+      (x, y) { b[y-1][x-1] }
     }
 }
 
