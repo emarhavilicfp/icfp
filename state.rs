@@ -13,8 +13,13 @@ enum square {
     lift_c,
     lift_o,
     earth,
-    empty
+    empty,
+    // If you add a square type, remember to update the number in
+    // hash_keys and gen_hashkeys.
 }
+
+type hash_val = u32;
+type hash_keys = @~[~[[hash_val]/8]];
 
 type grid = ~[mut ~[mut square]];
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
@@ -22,6 +27,9 @@ type state = {
     /* Intrinsics */
     flooding: int,
     waterproof: int,
+
+    hash: hash_val,
+    hash_keys: hash_keys,
 
     /* These changes periodically. */
     grid: grid, /* mut? */
@@ -48,9 +56,20 @@ impl extensions for grid {
 
     /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
+        // FIXME (#13): this should follow the loop protocol.
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (c+1, r+1)) }
         }
+    }
+
+    fn map_squares<T>(f: fn(square) -> T) -> ~[~[T]] {
+        let mut res = ~[];
+        for self.each |row| {
+            let mut r = ~[];
+            for row.each |s| { vec::push(r, f(s)) }
+            vec::push(res, r);
+        }
+        res
     }
 
     fn foldl<T: copy>(z: T, f: fn(T, square, coord) -> T) -> T {
@@ -78,6 +97,35 @@ impl extensions for grid {
                 vec::append_one(l, co)
             } else { l }
         })
+    }
+
+    fn hash(keys: hash_keys) -> hash_val {
+        let mut hash = 0;
+        assert keys.len() == self.len();
+        assert keys[0].len() == self[0].len();
+        do self.squares_i |s, c| {
+            let (y, x) = c;
+            let (x, y) = (x - 1, y - 1);
+            let z = &keys[x];
+            let z = &z[y];
+            let z = z[s as uint];
+            hash ^= z;
+        }
+        hash
+    }
+
+    fn gen_hashkeys() -> hash_keys {
+        let r = rand::rng();
+        @self.map_squares(|_s| [
+            r.gen_u32(), /* bot    */
+            r.gen_u32(), /* wall   */
+            r.gen_u32(), /* rock   */
+            r.gen_u32(), /* lambda */
+            r.gen_u32(), /* lift_c */
+            r.gen_u32(), /* lift_o */
+            r.gen_u32(), /* earth  */
+            r.gen_u32(), /* empty  */
+        ]/_)
     }
 }
 
@@ -288,9 +336,14 @@ fn read_board(+in: io::reader) -> state {
     let mut (x_, yinv_) = option::get(robot);
     let robotpos = (x_, grid.len() - yinv_);
 
+    let hash_keys = grid.gen_hashkeys();
+    let hash = grid.hash(hash_keys);
+
     ret {
         flooding: flooding,
         waterproof: waterproof,
+        hash: hash,
+        hash_keys: hash_keys,
         grid: grid,
         robotpos: robotpos,
         water: water,
@@ -461,10 +514,12 @@ impl extensions for state {
         }
 
         /* Here we go! */
+        // FIXME: we could use the FRU syntax here.
         ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
-
+            hash: grid_.hash(self.hash_keys), // FIXME: incrementally update
+            hash_keys: self.hash_keys,
             grid: grid_,
             robotpos: (x_, y_),
             water: water_,
