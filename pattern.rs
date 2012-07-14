@@ -57,8 +57,8 @@ fn flip_patsq(ps: patsq, ok: @mut bool) -> patsq {
 
 type pat = {
     p: ~[~[patsq]],
-    off_r: uint,
-    off_c: uint,
+    off_r: uint, off_c: uint,
+    off_r_dest: uint, off_c_dest: uint,
     cost: uint,
     cmd: ~[const move]
 };
@@ -76,6 +76,17 @@ fn match_offset(p: pat, g: grid, base: coord) -> bool {
     ret true;
 }
 
+fn match_show(p: pat, g: grid, base: coord) {
+    for p.p.eachi() |r, row| {
+        for row.eachi() |c, _psq| {
+            let (x,y) = base; // idx into grid
+            let ult_x = x+(c-p.off_c);
+            let ult_y = y-(r-p.off_r);
+            io::print(g.at((ult_x, ult_y)).to_str());
+        }
+        io::println("");
+    }
+}
 fn read_patterns(filename: str) -> ~[pat] {
     let in: io::reader = io::file_reader(filename).get();
 
@@ -109,13 +120,20 @@ fn read_patterns(filename: str) -> ~[pat] {
             let meta = str::split_char(line, ' ');
             let mut cmd = ~[];
             for meta[0].each_char() |c| { vec::push(cmd, move_from_char(c)); }
-            vec::push(rv, {p: p_pat, off_r: o_r, off_c: o_c,
-                           cost: meta[1].len(), //worse is better
-                           cmd: cmd});
+            let delta_r = vec::count(cmd, D) - vec::count(cmd, U);
+            let delta_c = vec::count(cmd, R) - vec::count(cmd, L);
+
+            vec::push(rv,
+                      {p: p_pat, off_r: o_r, off_c: o_c,
+                       off_r_dest: o_r + delta_r, off_c_dest: o_c + delta_c,
+                       cost: meta[1].len(), //worse is better
+                       cmd: cmd});
 
             if *flip_ok {
                 vec::push(rv, {p: flip_p_pat, off_r: o_r,
                                off_c: (p_pat[0u].len()-1u)-o_c,
+                               off_r_dest: o_r + delta_r,
+                               off_c_dest: o_c - delta_c,
                                cost: meta[1].len(), //worse: still better
                                cmd: do cmd.map |m| {m.flip()}} );
             }
@@ -129,6 +147,20 @@ fn read_patterns(filename: str) -> ~[pat] {
 }
 
 #[test]
-fn test_parse() {
-    read_patterns("patterns/some_patterns");
+fn test_some_stuff() {
+    let pats = read_patterns("patterns/some_patterns");
+
+    let s = #include_str("./maps/contest8.map");
+    let g = copy read_board(io::str_reader(s)).grid;
+
+    do pats.eachi() |_i, pat| {
+        do g.squares_i() |_sq, coord| {
+            if match_offset(pat, g, coord) {
+                match_show(pat, g, coord);
+                io::println("--------");
+            }
+        };
+        true
+    };
+
 }
