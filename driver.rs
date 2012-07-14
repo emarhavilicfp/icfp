@@ -39,7 +39,7 @@ fn human(init: state::state) {
     let input = io::stdin();
 
     let mut bot_n = 0;
-    let mut robot_plan : option<~[const state::move]> = none;
+    let mut robot_plan : option<~[mut state::move]> = none;
 
     io::println(hist[0].to_str());
     while (!input.eof()) {

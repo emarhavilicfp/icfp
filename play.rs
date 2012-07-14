@@ -12,11 +12,28 @@ import dvec::extensions;
 //    {num: x.num * y.num, den: x.den * y.den}
 //}
 
+// BUG: add this
+fn reach<T>(v: &[const T], blk: fn(T) -> bool) {
+    do vec::unpack_slice(v) |p, n| {
+        let mut i = 1;
+        while i <= n {
+            unsafe {
+                if !blk(*ptr::offset(p, n-i)) { break; }
+            }
+            i += 1;
+        }
+    }
+}
+
+/****************************************************************************
+ * Glue
+ ****************************************************************************/
+
 type brushfire = path::path_state;
 
 fn path_len(p: path::path) -> uint { vec::len(p) }
 
-fn path_for_each(p: path::path, blk: fn(state::move) -> bool) { p.each(blk) }
+fn path_for_each(p: path::path, blk: fn(state::move) -> bool) { reach(p,blk) }
 
 
 fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
@@ -26,14 +43,16 @@ fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
     }
 }
 
-fn path_easy(s: state::state, fire: @mut option<brushfire>) -> option<path::path> {
+fn path_easy(s: state::state, fire: @mut option<brushfire>)
+        -> option<path::path> {
     let lambdas = s.grid.lambdas();
     if fire.is_some() {
         let mut shit = none;
         *fire <-> shit;
         let (shit1, shit2) = option::unwrap(shit);
         // Get path and new state
-        let (pathres, stateres) = path::genpath_restart(s.grid, s.robotpos, lambdas, shit1, shit2);
+        let (pathres, stateres) =
+            path::genpath_restart(s.grid, s.robotpos, lambdas, shit1, shit2);
         *fire = some(stateres);
         pathres
     } else {
@@ -43,7 +62,12 @@ fn path_easy(s: state::state, fire: @mut option<brushfire>) -> option<path::path
     }
 
 }
-fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>) -> option<path::path> { none }
+fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>)
+        -> option<path::path> { none }
+
+/****************************************************************************
+ * Code
+ ****************************************************************************/
 
 // Finds a path to the lambda that makes us happiest.
 fn get_next_lambda(s: state::state) -> option<(state::state,path::path)> {
@@ -86,27 +110,36 @@ fn get_next_lambda(s: state::state) -> option<(state::state,path::path)> {
     }
 }
 
-// Repeatedly finds lambdas (hopefully).
-fn play_game_prime(-s: state::state, -moves_so_far: dvec::dvec<state::move>)
-        -> (~[const state::move], state::state) {
+// Repeatedly finds lambdas (hopefully). Generates the movelist backwards.
+fn greedy_finish(-s: state::state)
+        -> (dvec::dvec<state::move>, state::state) {
     // Attempt to do something next.
     let result = get_next_lambda(s);
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
-        // Append path to moves_so_far.
+        // Find what to do next.
+        let (finishing_moves,endstate) = greedy_finish(newstate);
+        // Do this stuff before.
         for path_for_each(path) |the_move| {
-            moves_so_far.push(the_move);
+            finishing_moves.push(the_move);
         }
-        // Keep going!
-        play_game_prime(newstate, moves_so_far)
+        (finishing_moves, endstate)
     } else {
         // All done.
-        (dvec::unwrap(moves_so_far) + [state::A]/_, s)
+        (dvec::from_elem(state::A), s)
     }
 }
 
-fn play_game(+s: state::state) -> (~[const state::move], state::state) {
-    play_game_prime(s, dvec::dvec())
+// type search_opts = 
+
+//fn search(s: state::state, -moves_so_far: dvec::dvec<state::move>,
+//          o: search_opts) -> (
+
+fn play_game(+s: state::state) -> (~[mut state::move], state::state) {
+    let (moves_rev, endstate) = greedy_finish(s);
+    let moves = dvec::unwrap(moves_rev);
+    vec::reverse(moves);
+    (moves,endstate)
 }
 
 mod test {
