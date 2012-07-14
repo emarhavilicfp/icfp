@@ -1,4 +1,3 @@
-# this is a spurious comment
 CFLAGS=--static
 LDFLAGS=-lpthread -lrt -ldl
 MODE ?= dynamic
