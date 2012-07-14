@@ -33,3 +33,10 @@ fn genpath(_b: state::grid, _dest: state::coord, _src: state::coord) -> path {
     // TODO: implement
     fail;
 }
+
+#[test]
+fn test_genpath() {
+    let state = grid::read_board(io::str_reader(#include_str("./maps/flood1.map")));
+    let p = genpath(state.grid,(7,6),(2,6));
+    assert (p.len() == 13);
+}
