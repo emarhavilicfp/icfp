@@ -2,6 +2,7 @@
 
 use std;
 
+import option::option;
 import io::reader_util;
 
 enum square {
@@ -17,6 +18,18 @@ enum square {
 
 type grid = ~[~[square]];
 type coord = (uint,uint);
+type state = {
+    /* Intrinsics */
+    flooding: option<int>,
+    waterproof: option<int>,
+    
+    /* These changes periodically. */
+    grid: grid, /* mut? */
+    robotpos: coord,
+    water: int, /* not an option -- just 0 otherwise */
+    nextflood: int, /* ticks until we flood next; ignored if not flooding */
+    underwater: int, /* how long we have been underwater */
+};
 
 // TODO: add a record type for board, with playerpos, rockslist, and all that
 enum move {
