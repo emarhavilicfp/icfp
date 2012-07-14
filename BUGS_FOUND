@@ -1,1 +1,3 @@
 dlist iter-trait EACH implementation forgot to check rv
+test failures give almost no useful information by default
+ - how to make them give useful information is unknown
