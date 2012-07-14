@@ -200,19 +200,65 @@ fn safely_passable(g: grid, r: uint, c: uint) -> bool {
     }
 }
 
-fn read_board_grid(+in: io::reader) -> grid {
+fn read_board(+in: io::reader) -> state {
+    let mut map_lines = "";
     let mut grid = ~[mut];
-    for in.each_line |line| {
+    let mut robot = none;
+
+    while (!in.eof()) {
+        let line = in.read_line();
+        if (line.len() == 0) {
+            break;
+        }
+        map_lines += line + "\n";
+    }
+
+    while (!in.eof()) {
+        let line = in.read_line();
+        alt (str::split_char_nonempty(line, ' ')) {
+            _ { /*TODO: read the rest of the damn file */ }
+        }
+    }
+
+    let map_reader = io::str_reader(map_lines);
+    let mut yinv = 0;
+    for map_reader.each_line |line| {
+        let mut x = 1;
         let mut row = ~[mut];
         for line.each_char |c| {
-            vec::push(row, square_from_char(c))
+            let sq = square_from_char(c);
+            if (sq == bot) {
+                alt (robot) {
+                    none { robot = some ((x, yinv)); }
+                    some(_) { fail; }
+                }
+            }
+            vec::push(row, sq);
+            x += 1;
         }
-        vec::push(grid, row)
+        vec::push(grid, row);
+        yinv += 1;
     }
     vec::reverse(grid);
+
     let width = grid[0].len();
     for grid.each |row| { assert row.len() == width }
-    grid
+
+    let mut (x_, yinv_) = option::get(robot);
+    let robotpos = (x_, width - yinv_);
+
+    ret {
+        flooding: 0,
+        waterproof: 0,
+        grid: grid,
+        robotpos: robotpos,
+        water: 0,
+        nextflood: 0,
+        underwater: 0,
+        lambdas: 0,
+        lambdasleft: 0,
+        score: 0,
+    }
 }
 
 enum step_result {
