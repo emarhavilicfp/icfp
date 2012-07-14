@@ -31,6 +31,20 @@ type state = {
     underwater: int, /* how long we have been underwater */
 };
 
+fn grid_iter(g: grid, f: fn(square)) {
+    for g.each() |row| {
+        for row.each() |s| { f(s) }
+    }
+}
+
+fn grid_iter_i(g: grid, f: fn(square, coord)) {
+    for g.eachi() |r, row| {
+        for row.eachi() |c, s| { f(s, (r, c)) }
+    }
+}
+
+
+
 // TODO: add a record type for board, with playerpos, rockslist, and all that
 enum move {
     U, D, L, R, W, A
@@ -40,6 +54,16 @@ fn taxicab_distance(dest: coord, src: coord) {
     let (x1,y1) = dest;
     let (x2,y2) = src;
     (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
+}
+
+fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
+    let mut accum = z;
+    for g.eachi |y,row| {
+        for row.eachi |x,square| {
+            accum = f(accum, square, (x,y));
+        }
+    }
+    accum
 }
 
 fn flip_move(m: move) -> move {
@@ -138,7 +162,7 @@ mod test {
         let s = #include_str("./maps/contest1.map");
         read_board_grid(io::str_reader(s));
     }
-    
+
     #[test]
     fn deparse() {
         let s = "####\nR*LO\n. ##\n";
