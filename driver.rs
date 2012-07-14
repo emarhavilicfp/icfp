@@ -1,8 +1,16 @@
 import to_str::*;
 import state::*;
 
-fn main(_args: ~[str]) {
-    let map = #include_str("./maps/flood1.map");
+fn main(args: ~[str]) {
+    let map;
+    if (args.len() == 2) {
+        alt (io::read_whole_file_str(args[1])) {
+            result::ok (contents) { map = contents; }
+            result::err (msg) { fail msg; }
+        }
+    } else {
+        map = #include_str("./maps/contest1.map");
+    }
     let mut hist = ~[state::read_board(io::str_reader(map))];
     let input = io::stdin();
 
