@@ -102,7 +102,7 @@ fn read_patterns(filename: str) -> ~[pat] {
                 vec::push(rv, {p: flip_p_pat, off_r: o_r,
                                off_c: (p_pat[0u].len()-1u)-o_c,
                                cost: meta[1].len(), //worse: still better
-                               cmd: cmd.map(flip_move)} );
+                               cmd: do cmd.map |m| m.flip())} );
             }
 
             p_pat = ~[];

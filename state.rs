@@ -48,12 +48,10 @@ impl extensions for grid {
             for row.eachi |c, s| { f(s, (r+1, c+1)) }
         }
     }
-}
-
-fn taxicab_distance(dest: coord, src: coord) {
-    let (x1,y1) = dest;
-    let (x2,y2) = src;
-    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
+    
+    fn foldl<T: copy>(z: T, f: fn(T, square, coord) -> T) -> T {
+        foldl(z, self, f)
+    }
 }
 
 fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
@@ -66,8 +64,16 @@ fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
     accum
 }
 
-fn flip_move(m: move) -> move {
-    alt m { L {R} R {L} _ {m} }
+impl extensions for move {
+    fn flip() -> move {
+       alt self { L {R} R {L} _ {self} }
+    }
+}
+
+fn taxicab_distance(dest: coord, src: coord) {
+    let (x1,y1) = dest;
+    let (x2,y2) = src;
+    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
 }
 
 fn move_from_char(c: char) -> move {
