@@ -5,6 +5,8 @@ fn main(args: ~[str]) {
         fail "Must specify a board name";
     }
 
+    signal::init();
+
     let map_res = io::read_whole_file_str(args[1]);
     let fun_res = os::getenv("ICFP_HUMAN");
 

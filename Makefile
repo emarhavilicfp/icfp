@@ -4,6 +4,9 @@ MODE ?= dynamic
 
 all: bin/icfp
 
+C_SRC = c_signal.c
+C_OBJ = $(C_SRC:.c=.o)
+
 ICFP_SRC = icfp.rc \
 	   driver.rs \
 	   state.rs \
@@ -18,26 +21,26 @@ ICFP_SRC = icfp.rc \
 # Remember to add modules for your .rs files in icfp.rc too!
 ifeq ($(MODE),dynamic)
 
-bin/icfp: $(ICFP_SRC)
+bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	mkdir -p ./bin
 	rustc icfp.rc -o ./bin/icfp
 
 else
 
-bin/icfp: $(ICFP_SRC)
+bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	rustc -c icfp.rc
 	mkdir -p ./bin
 	g++ -o ./bin/icfp ${CFLAGS} icfp.o lib/*.o lib/*.a ${LDFLAGS}
 
 endif
 
-check: $(ICFP_SRC)
+check: $(ICFP_SRC) $(C_OBJ)
 	mkdir -p ./bin
 	rustc icfp.rc -o ./bin/icfp-test --test
 	./bin/icfp-test
 
 clean:
-	rm -f icfp.o ./bin/icfp
+	rm -f icfp.o ./bin/icfp $(C_OBJ)
 
 BUILD=$(shell date +icfp-%Y%m%d-%H%M)
 
