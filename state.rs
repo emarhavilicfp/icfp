@@ -314,6 +314,7 @@ impl extensions for state {
           lambda {
             lambdas_ = lambdas_ + 1;
             lambdasleft_ = lambdasleft_ - 1;
+            score_ = score_ + 25;
             (xp, yp)
           }
           lift_o { /* We've won -- ILHoist.hoist away! */
