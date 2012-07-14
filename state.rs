@@ -54,6 +54,16 @@ impl extensions for grid {
     fn foldl<T: copy>(z: T, f: fn(T, square, coord) -> T) -> T {
         foldl(z, self, f)
     }
+    
+    fn at(c: coord) -> square {
+        let (x, y) = c;
+        self[y-1][x-1]
+    }
+    
+    fn set(c: coord, s: square) {
+        let (x, y) = c;
+        self[y-1][x-1] = s;
+    }
 }
 
 fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
@@ -187,9 +197,53 @@ enum step_result {
 }
 
 impl extensions for state {
-    fn step(_m: move) -> step_result {
+    fn step(move: move) -> step_result {
+        let mut score_ = self.score - 1;
+        let mut lambdas_ = self.lambdas;
+        let mut grid_ = copy self.grid;
+        let (x, y) = self.robotpos;
+        
         /* Phase one -- bust a move! */
-        fail
+        let mut (xp, yp) = alt move {
+          L { (x-1, y) }
+          R { (x+1, y) }
+          U { (x, y+1) }
+          D { (x, y-1) }
+          W { (x, y) }
+          A { /* Abort!  Abort! */
+            ret endgame(score_ + self.lambdas * 25)
+          }
+        };
+        
+        /* Is the move valid? */
+        let (x_, y_) = alt grid_.at((xp, yp)) {
+          empty | earth { /* We're good. */ (xp, yp) }
+          lambda {
+            lambdas_ = lambdas_ + 1;
+            (xp, yp)
+          }
+          lift_o { /* We've won. */
+            ret endgame(score_ + self.lambdas * 50)
+          }
+          rock {
+            if xp == x + 1 && yp == y && 
+               grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
+                grid_.set((x+2, yp), rock);
+                (xp, yp)
+            } else
+            if xp == x - 1 && yp == y && 
+               grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
+                grid_.set((x-2, yp), rock);
+                (xp, yp)
+            } else {
+                (x, y)
+            }
+          }
+          _ { (x, y) }
+        };
+        
+        grid_.set((x, y), empty);
+        grid_.set((x_, y_), bot);
         
         /* Phase two -- update the map */
         fail
