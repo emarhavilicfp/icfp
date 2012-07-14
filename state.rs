@@ -106,8 +106,9 @@ impl extensions for grid {
 
     fn set(c: coord, s: square) {
         let (x, y) = c;
-        // FIXME: update hash
+        self.hash ^= self.keys.get(c, self.at(c));
         self.grid[y-1][x-1] = s;
+        self.hash ^= self.keys.get(c, self.at(c));
     }
     
     fn lambdas() -> ~[coord] {
@@ -543,9 +544,6 @@ impl extensions for state {
             if strict { ret oops; }
             ret endgame(score_);
         }
-
-        // FIXME: incremental update
-        grid_.hash = grid_.rehash();
 
         /* Here we go! */
         // FIXME: we could use the FRU syntax here.
