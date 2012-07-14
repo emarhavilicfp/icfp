@@ -32,10 +32,11 @@ fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
 
 fn genpaths(b: state::grid, src: state::coord,
             dests: ~[state::coord]) -> (option<path>, path_state) {
-    let(boundary, visited) = path_state;
     let (x, y) = src;
+    let visited: ~[~[mut (bool, option<state::move>)]] = ~[~[mut]];
     visited[x][y] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
+    let mut boundary = ~[(src, state::W)];
     while condition == none {
         boundary = propagate(b, boundary, visited);
         condition = winner(dests, visited);
@@ -50,13 +51,14 @@ fn genpaths(b: state::grid, src: state::coord,
     }
 }
 
-fn genpath_restart(b: state::gride, src: state::coord,
-                   dests: ~[state::coord], s: path_state) -> (option<path>, path_state) {
+fn genpath_restart(b: state::grid, src: state::coord,
+                   dests: ~[state::coord], v: ~[~[mut (bool, option<state::move>)]],
+                   bound: ~[boundary_element]) -> (option<path>, path_state) {
+    let mut visited = copy v;
+    let mut boundary = bound;
     let (x, y) = src;
-    let visited: ~[~[mut (bool, option<state::move>)]] = ~[~[mut]];
     visited[x][y] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
-    let mut boundary = ~[(src, state::W)];
     while condition == none {
         boundary = propagate(b, boundary, visited);
         condition = winner(dests, visited);
