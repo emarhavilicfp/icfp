@@ -535,6 +535,13 @@ impl extensions for state {
     }
 }
 
+// FIXME: we can't use state here, because it's not const.
+type transposition_table<T: copy> = std::map::hashmap<hash_val, T>;
+
+fn transposition_table<T: copy>() -> transposition_table<T> {
+    std::map::hashmap(|s: hash_val| s as uint, |a, b| a == b)
+}
+
 mod test {
     #[test]
     fn trivial_to_str() {
