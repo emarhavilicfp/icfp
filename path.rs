@@ -100,19 +100,16 @@ fn winner(dests: ~[state::coord],
 
 fn propagate(b: state::grid, boundary_list: ~[boundary_element],
              visited: ~[~[mut (bool, option<state::move>)]]) -> ~[boundary_element] {
-    let ret_list: ~[boundary_element] = ~[];
+    let mut ret_list: ~[boundary_element] = ~[];
     for boundary_list.each() |end| {
         let (p, _) = end;
         for get_empty_neighbors(p, b).each() |t| {
             let (neighbor, m) = t;
-            alt neighbor {
-              (x, y) {
-                let (cond, _move) = visited[y-1][x-1];
-                if !cond {
-                    vec::append_one(ret_list, (neighbor, m));
-                    visited[x][y] = (true, some(m));
-                }
-              }
+            let (x, y) = neighbor;
+            let (cond, _move) = visited[y-1][x-1];
+            if !cond {
+                ret_list += ~[(neighbor, m)];
+                visited[y-1][x-1] = (true, some(m));
             }
         }
     }
@@ -127,7 +124,13 @@ fn get_square(p: state::coord, b: state::grid) -> state::square {
 
 fn get_empty_neighbors(p: state::coord,
                        b: state::grid) -> ~[(state::coord, state::move)] {
-    vec::filter(get_neighbors(p), |t|{let (l, _) = t; get_square(l, b) == state::empty})
+    vec::filter(get_neighbors(p), |t| {
+        let (l, _) = t;
+        alt get_square(l, b) {
+          state::empty | state::earth |
+          state::lambda { true }
+          _ { false}
+        }})
 }
 
 fn get_neighbors(p: state::coord) -> ~[(state::coord, state::move)] {
@@ -146,5 +149,7 @@ fn test_genpath() {
 
     let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
     let (p, _) = genpaths(state.grid,(7,6),~[(2,6)]);
-    assert (p.is_some() && option::get(p).len() == 13);
+    assert p.is_some();
+    let plen = option::get(p).len();
+    assert plen == 13;
 }
