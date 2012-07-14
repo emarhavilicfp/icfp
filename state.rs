@@ -230,6 +230,7 @@ fn read_board(+in: io::reader) -> state {
 
     let map_reader = io::str_reader(map_lines);
     let mut yinv = 0;
+    let mut width = 0;
     for map_reader.each_line |line| {
         let mut x = 1;
         let mut row = ~[mut];
@@ -247,12 +248,19 @@ fn read_board(+in: io::reader) -> state {
             vec::push(row, sq);
             x += 1;
         }
+        if width < row.len() { width = row.len(); }
         vec::push(grid, row);
         yinv += 1;
     }
     vec::reverse(grid);
 
-    let width = grid[0].len();
+    let mut i = 0u;
+    while i < grid.len() {
+        let len = grid[i].len();
+        vec::grow(grid[i], width-len, empty);
+        i += 1u;
+    }
+
     for grid.each |row| { assert row.len() == width }
 
     let mut (x_, yinv_) = option::get(robot);
