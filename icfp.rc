@@ -22,3 +22,5 @@ mod path;
 
 mod evaluate;
 mod dlist;
+
+mod fuzzer;
