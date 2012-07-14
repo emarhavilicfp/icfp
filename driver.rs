@@ -44,14 +44,14 @@ fn human(init: state::state) {
     io::println(hist[0].to_str());
     while (!input.eof()) {
         let res;
-        let state = copy hist[0];
+        let state = copy hist[hist.len()-1];
         alt (input.read_char()) {
             'q' { res = some(state.step(A, false)); robot_plan = none; }
-            'w' { res = some(state.step(W, false)); robot_plan = none; }
-            'h' { res = some(state.step(L, false)); robot_plan = none; }
-            'j' { res = some(state.step(D, false)); robot_plan = none; }
-            'k' { res = some(state.step(U, false)); robot_plan = none; }
-            'l' { res = some(state.step(R, false)); robot_plan = none; }
+            ' ' { res = some(state.step(W, false)); robot_plan = none; }
+            'h' | 'a' { res = some(state.step(L, false)); robot_plan = none; }
+            'j' | 's' { res = some(state.step(D, false)); robot_plan = none; }
+            'k' | 'w' { res = some(state.step(U, false)); robot_plan = none; }
+            'l' | 'd' { res = some(state.step(R, false)); robot_plan = none; }
             'p' {
                 if hist.len() > 1 { vec::pop(hist); }
                 robot_plan = none; 
