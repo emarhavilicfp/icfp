@@ -1,3 +1,4 @@
+#dubious
 CFLAGS=--static
 LDFLAGS=-lpthread -lrt -ldl
 MODE ?= dynamic
