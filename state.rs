@@ -157,6 +157,12 @@ fn read_board_grid(+in: io::reader) -> grid {
     grid
 }
 
+impl extensions for state {
+    fn step(_m: move) -> state {
+        fail
+    }
+}
+
 mod test {
     #[test]
     fn trivial_to_str() {
