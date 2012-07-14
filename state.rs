@@ -431,7 +431,7 @@ impl extensions for state {
               }
             }
             lift_c {
-              if self.lambdasleft == 0 {
+              if lambdasleft_ == 0 {
                   grid_.set((sx, sy), lift_o);
               }
             }
