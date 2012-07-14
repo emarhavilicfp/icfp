@@ -1,5 +1,6 @@
 import to_str::*;
 import state::*;
+import play::play_game;
 
 fn main(args: ~[str]) {
     let map;
@@ -28,6 +29,11 @@ fn main(args: ~[str]) {
             'p' {
                 if hist.len() > 1 { vec::shift(hist); }
                 again;
+            }
+            'n' {
+                let robotplan = play_game(copy state);
+                let mv = vec::shift(robotplan);
+                res = some(state.step(mv, false));
             }
             '\n' { res = none; io::println(state.grid.to_str()); }
             _ { again; }
