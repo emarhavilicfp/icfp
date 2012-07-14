@@ -125,15 +125,36 @@ fn square_from_char(c: char) -> square {
     }
 }
 
+// If there's a boulder on top of me, will it fall to the right?
+fn right_fallable(g: grid, r: uint, c: uint) -> bool {
+    if g[r][c] == rock || g[r][c] == lambda {
+        g[r][c+1] == empty && g[r-1][c+1] == empty
+    } else {
+        false
+    }
+}
+
+// If there's a boulder on top of me, will it fall to the left?
+fn left_fallable(g: grid, r: uint, c: uint) -> bool {
+    if g[r][c] == rock {
+        !(g[r][c+1] == empty && g[r-1][c+1] == empty) &&
+        g[r][c-1] == empty && g[r-1][c-1] == empty
+    } else {
+        false
+    }
+}
+
+// Is it safe to move into this tile next turn?
 fn safe(g: grid, r: uint, c: uint) -> bool {
     if r == 0 || c == 0 || c == g[0u].len() - 1u {
         true
     } else {
-        !(g[r-1][c] == rock
-          || (g[r-1][c-1] == rock
-              && (g[r][c-1] == rock || g[r][c-1] == lambda))
-          || (g[r-1][c+1] == rock
-              && (g[r][c+1] == rock)))
+        // Die from above
+        !((g[r+2][c] == rock && g[r+1][c] == empty)
+        // Die from left boulder falling right
+          || (g[r+2][c-1] == rock && right_fallable(g, r+1, c-1))
+        // Die from right boulder falling left
+          || (g[r+2][c+1] == rock && left_fallable(g, r+1, c+1)))
     }
 }
 
