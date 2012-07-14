@@ -16,6 +16,6 @@ use std;
 mod hello;
 
 mod state;
-//mod pattern;
+mod pattern;
 
 mod path;

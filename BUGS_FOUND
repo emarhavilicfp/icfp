@@ -1,3 +1,3 @@
 dlist iter-trait EACH implementation forgot to check rv
-test failures give almost no useful information by default
- - how to make them give useful information is unknown
+test failures give no useful information if failure string not specified
+ - a span (or even backtrace? perhaps with a verbose flag) would be nice
