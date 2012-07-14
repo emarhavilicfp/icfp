@@ -4,7 +4,7 @@ MODE ?= dynamic
 
 all: $(MODE)
 
-ICFP_SRC = icfp.rc hello.rs board.rs
+ICFP_SRC = icfp.rc hello.rs state.rs path.rs
 
 # Remember to add modules for your .rs files in icfp.rc too!
 static: $(ICFP_SRC)

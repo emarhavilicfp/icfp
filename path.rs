@@ -1,6 +1,6 @@
 // Path generation.
 
-import board;
+import state;
 
 export path;
 
@@ -9,7 +9,7 @@ trait path {
     fn len() -> uint;
 }
 
-fn genpath(_b: board::grid, _dest: board::coord, _src: board::coord) -> path {
+fn genpath(_b: state::grid, _dest: state::coord, _src: state::coord) -> path {
     // TODO: implement
     fail;
 }
