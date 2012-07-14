@@ -23,6 +23,12 @@ enum move {
     U, D, L, R, W, A
 }
 
+fn taxicab_distance(dest: coord, src: coord) {
+    let (x1,y1) = dest;
+    let (x2,y2) = src;
+    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
+}
+
 fn flip_move(m: move) -> move {
     alt m { L {R} R {L} _ {m} }
 }
