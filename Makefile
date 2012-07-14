@@ -51,15 +51,16 @@ pkg:
 	@echo "You *must* build this package on the VM."; exit 1
 else
 pkg: bin/icfp
-	@echo ass; exit 1
 	rm -rf $(BUILD)
 	mkdir $(BUILD)
 	cp $(PKGFILES) $(BUILD)
 	cp -R patterns $(BUILD)
 	cp bin/icfp $(BUILD)
+	mkdir $(BUILD)/lib
+	cp `ldd bin/icfp | grep /usr/local/lib/rustc | cut -d' ' -f3` $(BUILD)/lib
 	git archive --format tar --prefix src/ HEAD | tar x -C $(BUILD)
 	tar czvf $(BUILD).tar.gz -C $(BUILD) .
-	rm -rf $(BUILD)
+#	rm -rf $(BUILD)
 endif
 
 .PHONY: pkg
