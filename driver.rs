@@ -36,25 +36,39 @@ fn human(init: state::state) {
     let mut hist = ~[copy init];
     let input = io::stdin();
 
+    let mut bot_n = 0;
+    let mut robot_plan : option<~[const state::move]> = none;
+
     io::println(hist[0].to_str());
     while (!input.eof()) {
         let res;
         let state = copy hist[0];
         alt (input.read_char()) {
-            'q' { res = some(state.step(A, false)); }
-            'w' { res = some(state.step(W, false)); }
-            'h' { res = some(state.step(L, false)); }
-            'j' { res = some(state.step(D, false)); }
-            'k' { res = some(state.step(U, false)); }
-            'l' { res = some(state.step(R, false)); }
+            'q' { res = some(state.step(A, false)); robot_plan = none; }
+            'w' { res = some(state.step(W, false)); robot_plan = none; }
+            'h' { res = some(state.step(L, false)); robot_plan = none; }
+            'j' { res = some(state.step(D, false)); robot_plan = none; }
+            'k' { res = some(state.step(U, false)); robot_plan = none; }
+            'l' { res = some(state.step(R, false)); robot_plan = none; }
             'p' {
-                if hist.len() > 1 { vec::shift(hist); }
+                if hist.len() > 1 { vec::pop(hist); }
+                robot_plan = none; 
                 again;
             }
             'n' {
-                let (robotplan, _newstate) = play_game(copy state);
-                let mv = vec::head(robotplan);
-                res = some(state.step(mv, false));
+                alt robot_plan {
+                    some(plan) {
+                        let shit : state::move = plan[bot_n];
+                        res = some(state.step(shit, false));
+                    }
+                    none {
+                        bot_n = 0;
+                        let (plan, _n) = play_game(copy state);
+                        res = some(state.step(plan[bot_n], false));
+                        robot_plan = some(plan);
+                    }
+                }
+                bot_n += 1;
             }
             '\n' { res = none; io::println(state.to_str()); }
             _ { again; }
@@ -63,7 +77,7 @@ fn human(init: state::state) {
         alt (res) {
             some(res_) {
                 alt (res_) {
-                    stepped(newstate) { vec::unshift(hist, copy newstate); }
+                    stepped(newstate) { vec::push(hist, copy newstate); }
                     endgame(score) { io::println(#fmt("Finished with %d points.", score)); break; }
                     oops { io::println("Oops.  Bye."); break; }
                 }
