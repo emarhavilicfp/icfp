@@ -110,6 +110,20 @@ fn move_from_char(c: char) -> move {
         _ { fail; /* XXX do something more reasonable here */ }
     }
 }
+
+impl of to_str::to_str for move {
+    fn to_str() -> str {
+        alt self {
+            U { "U" }
+            D { "D" }
+            L { "L" }
+            R { "R" }
+            A { "A" }
+            W { "W" }
+        }
+    }
+}
+
 impl of to_str::to_str for square {
     fn to_str() -> str {
         alt self {

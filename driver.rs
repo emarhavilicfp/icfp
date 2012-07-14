@@ -92,6 +92,9 @@ fn human(init: state::state) {
 
 fn robot(init: state::state) {
     import state::*;
-    let (_, end) = play::play_game(copy init);
-    io::println(end.to_str());
+    let (moves, _) = play::play_game(copy init);
+    for moves.each |m| {
+        io::print(m.to_str());
+    }
+    io::println("");
 }
