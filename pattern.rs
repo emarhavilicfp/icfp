@@ -1,6 +1,6 @@
 import io::reader_util;
 
-import board::*;
+import state::*;
 
 
 
@@ -13,6 +13,7 @@ macro_rules! sqpt {
 
 enum patsq {
     eat,    pass,    fall_r,    fall_l,    solid,    lam,    mt,    not_mt,
+    boulder,
     any
 }
 
@@ -21,7 +22,7 @@ fn mtc(ps: patsq, s: square) -> bool {
       eat {sqpt!{earth, lambda, lift_o}}
       pass {sqpt!{earth, lambda, empty, lift_o}}
       fall_r {sqpt!{rock, lambda}}
-      fall_l {s==rock}
+      boulder | fall_l {s==rock}
       solid {sqpt!{rock, wall}} // maybe also earth?
       lam {s==lambda}
       mt {s==empty} // should also match accessible earth squares
@@ -36,11 +37,12 @@ fn ch_to_patsq(c: char) -> patsq {
       'P' { pass }
       '>' { fall_r } '<' { fall_l }
       'S' { solid }
+      '*' { boulder }
       '\\' { lam }
       '_' { mt }
       'X' { not_mt }
       '?' { any }
-      _ { fail; }
+      _ { fail "failure YOU SUCK"; }
     }
 }
 
@@ -58,7 +60,7 @@ type pat = {
     off_r: uint,
     off_c: uint,
     cost: uint,
-    cmd: ~[move]
+    cmd: ~[const move]
 };
 
 fn read_patterns(filename: str) -> ~[pat] {
@@ -93,7 +95,7 @@ fn read_patterns(filename: str) -> ~[pat] {
             str::shift_char(line);
             let meta = str::split_char(line, ' ');
             let mut cmd = ~[];
-            for meta[0].each_char() |c| { vec::push(cmd, mv_from_char(c)); }
+            for meta[0].each_char() |c| { vec::push(cmd, move_from_char(c)); }
             vec::push(rv, {p: p_pat, off_r: o_r, off_c: o_c,
                            cost: meta[1].len(), //worse is better
                            cmd: cmd});
@@ -102,7 +104,7 @@ fn read_patterns(filename: str) -> ~[pat] {
                 vec::push(rv, {p: flip_p_pat, off_r: o_r,
                                off_c: (p_pat[0u].len()-1u)-o_c,
                                cost: meta[1].len(), //worse: still better
-                               cmd: do cmd.map |m| m.flip())} );
+                               cmd: do cmd.map |m| {m.flip()}} );
             }
 
             p_pat = ~[];
@@ -110,6 +112,10 @@ fn read_patterns(filename: str) -> ~[pat] {
             *flip_ok = true;
         }
     }
-    #error["%?", rv];
     ret rv;
+}
+
+#[test]
+fn test_parse() {
+    read_patterns("patterns/some_patterns");
 }
