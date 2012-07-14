@@ -29,6 +29,16 @@ fn taxicab_distance(dest: coord, src: coord) {
     (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
 }
 
+fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
+    let mut accum = z;
+    for g.eachi |y,row| {
+        for row.eachi |x,square| {
+            accum = f(accum, square, (x,y));
+        }
+    }
+    accum
+}
+
 fn flip_move(m: move) -> move {
     alt m { L {R} R {L} _ {m} }
 }
