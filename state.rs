@@ -72,8 +72,12 @@ impl extensions for grid {
         self[y-1][x-1] = s;
     }
     
-    fn lambdas() -> ~[state::coord] {
-        fail
+    fn lambdas() -> ~[coord] {
+        self.foldl(~[], fn @(l: ~[coord], sq: square, co: coord) -> ~[coord] {
+            if sq == lambda {
+                vec::append_one(l, co)
+            } else { l }
+        })
     }
 }
 
