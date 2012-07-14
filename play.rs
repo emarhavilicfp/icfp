@@ -2,6 +2,7 @@
 
 import path;
 import state;
+import state::extensions;
 import heuristics::*;
 import dvec;
 import dvec::extensions;
@@ -11,17 +12,38 @@ import dvec::extensions;
 //    {num: x.num * y.num, den: x.den * y.den}
 //}
 
-type brushfire = ();
+type brushfire = path::path_state;
 
-fn path_len(_p: path::path) -> uint { fail; }
+fn path_len(p: path::path) -> uint { vec::len(p) }
 
-fn path_for_each(_p: path::path, _blk: fn(state::move) -> bool) { fail; }
+fn path_for_each(p: path::path, blk: fn(state::move) -> bool) { p.each(blk) }
 
 
-fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> { fail; }
+fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
+    alt path::apply(_ml, _s, false) {
+        state::stepped(state) { some(copy state) } // XXX remove copy
+        state::endgame(*) | state::oops { none } // XXX fix endgame
+    }
+}
 
-fn path_easy(_s: state::state, _fire: @mut option<brushfire>) -> option<path::path> { fail; }
-fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>) -> option<path::path> { fail; }
+fn path_easy(s: state::state, fire: @mut option<brushfire>) -> option<path::path> {
+    let lambdas = s.grid.lambdas();
+    if fire.is_some() {
+        let mut shit = none;
+        *fire <-> shit;
+        let (shit1, shit2) = option::unwrap(shit);
+        // Get path and new state
+        let (pathres, stateres) = path::genpath_restart(s.grid, s.robotpos, lambdas, shit1, shit2);
+        *fire = some(stateres);
+        pathres
+    } else {
+        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, lambdas);
+        *fire = some(stateres);
+        pathres
+    }
+
+}
+fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>) -> option<path::path> { none }
 
 // Finds a path to the lambda that makes us happiest.
 fn get_next_lambda(s: state::state) -> option<(state::state,path::path)> {

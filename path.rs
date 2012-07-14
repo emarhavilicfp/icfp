@@ -6,8 +6,6 @@ import dvec;
 import vec;
 import vec::extensions;
 
-export path;
-export boundary_element;
 
 type boundary_element = (state::coord, state::move);
 type path_state = (~[~[mut (bool, option<state::move>)]], ~[boundary_element]);
