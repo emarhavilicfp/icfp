@@ -9,6 +9,8 @@ fn main(args: ~[str]) {
             result::ok (contents) { map = contents; }
             result::err (msg) { fail msg; }
         }
+
+        pattern::demo_pats(state::read_board(io::str_reader(map)).grid);
     } else {
         map = #include_str("./maps/contest1.map");
     }
