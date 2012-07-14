@@ -1,0 +1,39 @@
+Emarhavil Heavy Functional Programming
+======================================
+
+ABOUT US
+--------
+
+We're a team based in Mountain View, CA; we unite around the fact that we
+wish to try implementing an ICFP challenge in Mozilla's new experimental
+language, Rust [1].  Our explicit goals for this iteration of the
+competition are to 1) have fun, and 2) put Rust on the map, giving it a
+serious test of something other than the Rust compiler written in it.
+
+We would like to thank the Mozilla Corporation for allowing us the use of
+their office space over the weekend (keeping the lights and AC on for us,
+and keeping us fed!).
+
+OUR LIGHTNING ROUND SUBMISSION
+------------------------------
+
+We submit some mostly untested pathfinding code that might or might not
+work.
+
+TEAM MEMBERS
+------------
+
+(in no particular order ... just looking around the room)
+
+Joshua Wise (NVIDIA)
+Ben Blum (Carnegie Mellon University; Mozilla Corporation)
+Paul Stansifer (Northeastern University; Mozilla Corporation)
+Josiah Boning (Dropbox)
+Kevin Murphy (Carnegie Mellon University; NVIDIA)
+Ben Harris (NVIDIA)
+Roy Froystig (Stanford University)
+Zizhuang Yang (Facebook)
+Tony Fernandez (Carnegie Mellon University; Google)
+Eric Holk (Indiana University; Mozilla Corporation)
+
+[1] http://www.rust-lang.org/

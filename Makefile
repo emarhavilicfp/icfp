@@ -2,7 +2,7 @@ CFLAGS=--static
 LDFLAGS=-lpthread -lrt -ldl
 MODE ?= dynamic
 
-all: $(MODE)
+all: bin/icfp
 
 ICFP_SRC = icfp.rc \
 	   driver.rs \
@@ -16,14 +16,20 @@ ICFP_SRC = icfp.rc \
 	   fuzzer.rs
 
 # Remember to add modules for your .rs files in icfp.rc too!
-static: $(ICFP_SRC)
+ifeq ($(MODE),dynamic)
+
+bin/icfp: $(ICFP_SRC)
+	mkdir -p ./bin
+	rustc icfp.rc -o ./bin/icfp
+
+else
+
+bin/icfp: $(ICFP_SRC)
 	rustc -c icfp.rc
 	mkdir -p ./bin
 	g++ -o ./bin/icfp ${CFLAGS} icfp.o lib/*.o lib/*.a ${LDFLAGS}
 
-dynamic: $(ICFP_SRC)
-	mkdir -p ./bin
-	rustc icfp.rc -o ./bin/icfp
+endif
 
 check: $(ICFP_SRC)
 	mkdir -p ./bin
@@ -32,3 +38,25 @@ check: $(ICFP_SRC)
 
 clean:
 	rm -f icfp.o ./bin/icfp
+
+BUILD=$(shell date +icfp-%Y%m%d-%H%M)
+
+PKGFILES=pkg/PACKAGES_TESTING pkg/README pkg/install pkg/lifter
+
+ifneq ($(shell uname -n),icfp)
+pkg:
+	@echo "You *must* build this package on the VM."; exit 1
+else
+pkg: bin/icfp
+	@echo ass; exit 1
+	rm -rf $(BUILD)
+	mkdir $(BUILD)
+	cp $(PKGFILES) $(BUILD)
+	cp -R patterns $(BUILD)
+	cp bin/icfp $(BUILD)
+	git archive --format tar --prefix src/ HEAD | tar x -C $(BUILD)
+	tar czvf $(BUILD).tar.gz -C $(BUILD) .
+	rm -rf $(BUILD)
+endif
+
+.PHONY: pkg
