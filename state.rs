@@ -213,14 +213,17 @@ fn read_board(+in: io::reader) -> state {
         map_lines += line + "\n";
     }
 
+    let mut water = 0;
+    let mut flooding = 0;
+    let mut waterproof = 10;
     while (!in.eof()) {
         let line = in.read_line();
         let split = str::split_char_nonempty(line, ' ');
         alt (split[0]) {
-            "Water" {
-                fail "WATER!";
-            }
-            _ { }
+            "Water" { water = option::get(int::from_str(split[1])); }
+            "Flooding" { flooding = option::get(int::from_str(split[1])); }
+            "Waterproof" { waterproof = option::get(int::from_str(split[1])); }
+            _ { fail "Bad metadata in map file"; }
         }
     }
 
@@ -252,12 +255,12 @@ fn read_board(+in: io::reader) -> state {
     let robotpos = (x_, width - yinv_);
 
     ret {
-        flooding: 0,
-        waterproof: 0,
+        flooding: flooding,
+        waterproof: waterproof,
         grid: grid,
         robotpos: robotpos,
-        water: 0,
-        nextflood: 0,
+        water: water,
+        nextflood: flooding,
         underwater: 0,
         lambdas: 0,
         lambdasleft: 0,
