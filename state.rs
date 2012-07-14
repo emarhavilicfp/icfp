@@ -408,14 +408,13 @@ mod test {
     #[test]
     fn read_simple_board() {
         let s = #include_str("./maps/contest1.map");
-        read_board_grid(io::str_reader(s));
+        read_board(io::str_reader(s));
     }
 
     #[test]
     fn deparse() {
         let s = "####\nR*LO\n. ##\n";
-        let gr = read_board_grid(io::str_reader(s));
-        let s2 = gr.to_str();
+        let s2 = read_board(io::str_reader(s)).to_str();
         assert s == s2;
     }
 }
