@@ -409,11 +409,13 @@ impl extensions for state {
             if xp == x + 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
                 grid_.set((x+2, yp), rock);
+                grid.set((x+2, yp), rock);
                 (xp, yp)
             } else
             if xp == x - 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
                 grid_.set((x-2, yp), rock);
+                grid.set((x-2, yp), rock);
                 (xp, yp)
             } else {
                 if strict { ret oops }
