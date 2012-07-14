@@ -21,7 +21,11 @@ enum square {
 type hash_val = u32;
 type hash_keys = @~[~[[hash_val]/8]];
 
-type grid = ~[mut ~[mut square]];
+type grid = {
+    grid: ~[mut ~[mut square]],
+    mut hash: hash_val,
+    keys: hash_keys,
+};
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
 type state = {
     /* Intrinsics */
@@ -56,7 +60,13 @@ impl extensions for hash_keys {
 }
 
 impl extensions for grid {
+    // FIXME: using this is not cheap.
+    pure fn [](i: uint) -> ~[mut square] {
+        self.grid[i]
+    }
+
     fn squares(f: fn(square)) {
+        let self = &self.grid;
         for self.each |row| {
             for row.each |s| { f(s) }
         }
@@ -65,6 +75,7 @@ impl extensions for grid {
     /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
         // FIXME (#13): this should follow the loop protocol.
+        let self = &self.grid;
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (c+1, r+1)) }
         }
@@ -72,6 +83,7 @@ impl extensions for grid {
 
     fn map_squares<T>(f: fn(square) -> T) -> ~[~[T]] {
         let mut res = ~[];
+        let self = &self.grid;
         for self.each |row| {
             let mut r = ~[];
             for row.each |s| { vec::push(r, f(s)) }
@@ -86,55 +98,66 @@ impl extensions for grid {
 
     fn at(c: coord) -> square {
         let (x, y) = c;
-        self[y-1][x-1]
+        self.grid[y-1][x-1]
     }
 
     fn in(c: coord) -> bool {
+        let self = &self.grid;
         let (x, y) = c;
         ret x>0 && y>0 && y<=self.len() && x<=self[0].len();
     }
 
     fn set(c: coord, s: square) {
         let (x, y) = c;
-        self[y-1][x-1] = s;
+        // FIXME: update hash
+        self.grid[y-1][x-1] = s;
     }
     
     fn lambdas() -> ~[coord] {
-        self.foldl(~[], fn @(l: ~[coord], sq: square, co: coord) -> ~[coord] {
-            if sq == lambda {
-                vec::append_one(l, co)
-            } else { l }
-        })
+        self.foldl(
+            ~[],
+            fn @(l: ~[coord], sq: square, co: coord) -> ~[coord]
+            {
+                if sq == lambda {
+                    vec::append_one(l, co)
+                } else { l }
+            })
     }
 
-    fn hash(keys: hash_keys) -> hash_val {
+    fn rehash() -> hash_val {
         let mut hash = 0;
-        assert keys.len() == self.len();
-        assert keys[0].len() == self[0].len();
         do self.squares_i |s, c| {
-            hash ^= keys.get(c, s);
+            hash ^= self.keys.get(c, s);
         }
         hash
     }
+}
 
+impl extensions for ~[mut ~[mut square]] {
     fn gen_hashkeys() -> hash_keys {
-        let r = rand::rng();
-        @self.map_squares(|_s| [
-            r.gen_u32(), /* bot    */
-            r.gen_u32(), /* wall   */
-            r.gen_u32(), /* rock   */
-            r.gen_u32(), /* lambda */
-            r.gen_u32(), /* lift_c */
-            r.gen_u32(), /* lift_o */
-            r.gen_u32(), /* earth  */
-            r.gen_u32(), /* empty  */
-        ]/_)
+
+        pure fn f() -> [hash_val]/8 unchecked {
+            // FIXME: it'd be nice if the rng were created outside
+            let r = rand::rng();
+            [
+                r.gen_u32(), /* bot    */
+                r.gen_u32(), /* wall   */
+                r.gen_u32(), /* rock   */
+                r.gen_u32(), /* lambda */
+                r.gen_u32(), /* lift_c */
+                r.gen_u32(), /* lift_o */
+                r.gen_u32(), /* earth  */
+                r.gen_u32(), /* empty  */
+            ]/_
+        }
+        
+        @self.map(|s| s.map(|_s| f()))
     }
 }
 
 fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
     let mut accum = z;
-    for g.eachi |y,row| {
+    for g.grid.eachi |y,row| {
         for row.eachi |x,square| {
             accum = f(accum, square, (x+1,y+1));
         }
@@ -192,7 +215,7 @@ impl of to_str::to_str for square {
 
 impl of to_str::to_str for grid {
     fn to_str() -> str {
-        str::connect(vec::reversed(do self.map |row| {
+        str::connect(vec::reversed(do self.grid.map |row| {
             pure fn sq_to_str (sq: square) -> str { unchecked { sq.to_str() } }
             str::concat(row.map(sq_to_str))
         }), "\n") + "\n"
@@ -228,6 +251,7 @@ fn square_from_char(c: char) -> square {
 
 // If there's a boulder on top of me, will it fall to the right?
 fn right_fallable(g: grid, r: uint, c: uint) -> bool {
+    let g = &g.grid;
     if g[r][c] == rock || g[r][c] == lambda {
         g[r][c+1] == empty && g[r-1][c+1] == empty
     } else {
@@ -237,6 +261,7 @@ fn right_fallable(g: grid, r: uint, c: uint) -> bool {
 
 // If there's a boulder on top of me, will it fall to the left?
 fn left_fallable(g: grid, r: uint, c: uint) -> bool {
+    let g = &g.grid;
     if g[r][c] == rock {
         !(g[r][c+1] == empty && g[r-1][c+1] == empty) &&
         g[r][c-1] == empty && g[r-1][c-1] == empty
@@ -246,8 +271,8 @@ fn left_fallable(g: grid, r: uint, c: uint) -> bool {
 }
 
 // If I'm a boulder at this position, will I fall in the update step?
-fn fallable(g: grid, r: uint, c: uint) -> bool {
-    g[r-1][c] == rock &&
+fn fallable(g: grid, r: uint, c: uint) -> bool { 
+    g.grid[r-1][c] == rock &&
     left_fallable(g, r-1, c) &&
     right_fallable(g, r-1, c)
 }
@@ -340,12 +365,18 @@ fn read_board(+in: io::reader) -> state {
     let robotpos = (x_, grid.len() - yinv_);
 
     let hash_keys = grid.gen_hashkeys();
-    let hash = grid.hash(hash_keys);
+
+    let grid = {
+        grid: grid,
+        mut hash: 0,
+        keys: hash_keys,
+    };
+    grid.hash = grid.rehash();
 
     ret {
         flooding: flooding,
         waterproof: waterproof,
-        hash: hash,
+        hash: grid.hash,
         hash_keys: hash_keys,
         grid: grid,
         robotpos: robotpos,
@@ -523,7 +554,7 @@ impl extensions for state {
         ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
-            hash: grid_.hash(self.hash_keys), // FIXME: incrementally update
+            hash: grid_.rehash(), // FIXME: incrementally update
             hash_keys: self.hash_keys,
             grid: grid_,
             robotpos: (x_, y_),
@@ -534,6 +565,10 @@ impl extensions for state {
             lambdasleft: lambdasleft_,
             score: score_
         }));
+    }
+
+    fn rehash() -> hash_val {
+        self.grid.rehash()
     }
 }
 
@@ -570,10 +605,26 @@ mod test {
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }
+
+    #[test]
+    fn bouldering_problem_hashes() {
+        let s = "#####\n# R #\n# * #\n#   #\n#####\n";
+        let mut b = read_board(io::str_reader(s));
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
+        assert b.hash == b.rehash();
+        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
+        assert b.hash == b.rehash();
+        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+    }    
 }
