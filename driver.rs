@@ -1,27 +1,36 @@
+import io::reader_util;
+
 fn main(args: ~[str]) {
     import result::*;
+    
+    let map;
 
-    if (args.len() < 2) {
-        fail "Must specify a board name";
+    if os::getenv("COMPETITION") == none {
+        if (args.len() < 2) {
+            fail "Must specify a board name";
+        }
+    
+        let map_res = io::read_whole_file_str(args[1]);
+        alt (map_res) {
+            ok (mm) { map = mm; }
+            err(msg) { fail msg; }
+        }
+    } else {
+        map = str::from_bytes(io::stdin().read_whole_stream());
     }
 
     signal::init();
 
-    let map_res = io::read_whole_file_str(args[1]);
     let fun_res = os::getenv("ICFP_HUMAN");
 
     let fun;
-    let state;
 
     alt (fun_res) {
         some (_) { fun = human; }
         none { fun = robot; }
     }
 
-    alt (map_res) {
-        ok (map) { state = state::read_board(io::str_reader(map)); }
-        err(msg) { fail msg; }
-    }
+    let state = state::read_board(io::str_reader(map));
 
     fun(state);
 }
