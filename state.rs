@@ -155,6 +155,13 @@ fn left_fallable(g: grid, r: uint, c: uint) -> bool {
     }
 }
 
+// If I'm a boulder at this position, will I fall in the update step?
+fn fallable(g: grid, r: uint, c: uint) -> bool {
+    g[r-1][c] == rock &&
+    left_fallable(g, r-1, c) &&
+    right_fallable(g, r-1, c)
+}
+
 // Is it safe to move into this tile next turn?
 fn safe(g: grid, r: uint, c: uint) -> bool {
     if r == 0 || c == 0 || c == g[0u].len() - 1u {
