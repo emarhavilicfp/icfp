@@ -22,7 +22,7 @@ type state = {
     /* Intrinsics */
     flooding: int,
     waterproof: int,
-    
+
     /* These changes periodically. */
     grid: grid, /* mut? */
     robotpos: coord,
@@ -30,6 +30,7 @@ type state = {
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     underwater: int, /* how long we have been underwater */
     lambdas: int, /* how many lambdas we have collected */
+    lambdasleft: int, /* how many lambdas we have left */
     score: int,
     /* We probably need a list of rocks here. */
 };
@@ -45,21 +46,27 @@ impl extensions for grid {
         }
     }
     
+    /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (r+1, c+1)) }
         }
     }
-    
+
     fn foldl<T: copy>(z: T, f: fn(T, square, coord) -> T) -> T {
         foldl(z, self, f)
     }
-    
+
     fn at(c: coord) -> square {
         let (x, y) = c;
         self[y-1][x-1]
     }
-    
+
+    fn in(c: coord) -> bool {
+        let (x, y) = c;
+        ret x>0 && y>0 && x<=self.len() && y<=self[0].len();
+    }
+
     fn set(c: coord, s: square) {
         let (x, y) = c;
         self[y-1][x-1] = s;
@@ -70,7 +77,7 @@ fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
     let mut accum = z;
     for g.eachi |y,row| {
         for row.eachi |x,square| {
-            accum = f(accum, square, (x,y));
+            accum = f(accum, square, (x+1,y+1));
         }
     }
     accum
@@ -207,9 +214,12 @@ impl extensions for state {
     fn step(move: move) -> step_result {
         let mut score_ = self.score - 1;
         let mut lambdas_ = self.lambdas;
+        let mut lambdasleft_ = self.lambdasleft;
+        let rocks_fall = @mut false; /* everybody dies -- delayed for later */
         let mut grid_ = copy self.grid;
+        let grid = copy self.grid; /* XXX point to original self.grid later if able */
         let (x, y) = self.robotpos;
-        
+
         /* Phase one -- bust a move! */
         let mut (xp, yp) = alt move {
           L { (x-1, y) }
@@ -221,24 +231,25 @@ impl extensions for state {
             ret endgame(score_ + self.lambdas * 25)
           }
         };
-        
+
         /* Is the move valid? */
         let (x_, y_) = alt grid_.at((xp, yp)) {
           empty | earth { /* We're good. */ (xp, yp) }
           lambda {
             lambdas_ = lambdas_ + 1;
+            lambdasleft_ = lambdasleft_ - 1;
             (xp, yp)
           }
-          lift_o { /* We've won. */
+          lift_o { /* We've won -- ILHoist.hoist away! */
             ret endgame(score_ + self.lambdas * 50)
           }
           rock {
-            if xp == x + 1 && yp == y && 
+            if xp == x + 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
                 grid_.set((x+2, yp), rock);
                 (xp, yp)
             } else
-            if xp == x - 1 && yp == y && 
+            if xp == x - 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
                 grid_.set((x-2, yp), rock);
                 (xp, yp)
@@ -248,15 +259,80 @@ impl extensions for state {
           }
           _ { (x, y) }
         };
-        
+
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
         
-        /* Phase two -- update the map */
-        fail
+        let placerock = fn @( &grid_: grid, c: coord) {
+            /* recall x_ and y_ at this point are where the robot has moved to */
+            let (x, y) = c;
+            if x == x_ && y == (y_ - 1) {
+                *rocks_fall = true;
+            }
+            grid_[y-1][x-1] = rock;
+        };
         
-        /* Phase three -- check for ending conditions */
-        fail
+        /* Phase two -- update the map */
+        do grid.squares_i |sq, c| {
+          let (sx, sy) = c;
+          alt sq {
+            rock {
+              if grid.at((sx, sy-1)) == empty {
+                  placerock(grid_, (sx, sy-1));
+              } else if grid.at((sx, sy-1)) == rock &&
+                        grid.at((sx+1, sy)) == empty &&
+                        grid.at((sx+1, sy-1)) == empty {
+                  placerock(grid_, (sx+1, sy-1));
+                  grid_.set((sx, sy), empty);
+              } else if grid.at((sx, sy-1)) == rock &&
+                        (grid.at((sx+1, sy)) != empty ||
+                         grid.at((sx+1, sy-1)) != empty) &&
+                        grid.at((sx-1, sy)) == empty &&
+                        grid.at((sx-1, sy-1)) == empty {
+                  placerock(grid_, (sx-1, sy-1));
+                  grid_.set((sx, sy), empty);
+              } else if grid.at((sx, sy-1)) == lambda &&
+                        grid.at((sx+1, sy)) == empty &&
+                        grid.at((sx+1, sy-1)) == empty {
+                  placerock(grid_, (sx+1, sy-1));
+                  grid_.set((sx, sy), empty);
+              }
+            }
+            lift_c {
+              if self.lambdasleft == 0 {
+                  grid_.set((sx, sy), lift_o);
+              }
+            }
+            _ { }
+          }
+        }
+        
+        /* Have we won? */
+        if grid_.at((x_, y_)) == lift_o {
+            ret endgame(score_ + lambdas_ * 50);
+        }
+        
+        /* Check to see if rocks fall *after* we could have successfully taken the lambda lift. */
+        if *rocks_fall {
+            ret endgame(score_);
+        }
+        
+        /* XXX update water */
+        
+        /* Here we go! */
+        ret stepped({
+            flooding: self.flooding,
+            waterproof: self.waterproof,
+            
+            grid: grid_,
+            robotpos: (x_, y_),
+            water: self.water,
+            nextflood: self.nextflood,
+            underwater: self.underwater,
+            lambdas: lambdas_,
+            lambdasleft: lambdasleft_,
+            score: score_
+        });
     }
 }
 

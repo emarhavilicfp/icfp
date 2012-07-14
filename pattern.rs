@@ -63,6 +63,19 @@ type pat = {
     cmd: ~[const move]
 };
 
+fn match_offset(p: pat, g: grid, base: coord) -> bool {
+    for p.p.eachi() |r, row| {
+        for row.eachi() |c, psq| {
+            let (x,y) = base; // idx into grid
+            let ult_x = x+(c-p.off_c);
+            let ult_y = y-(r-p.off_r);
+            if !g.in((ult_x, ult_y)) { ret false; }
+            if !mtc(psq, g.at((ult_x, ult_y))) { ret false; }
+        }
+    }
+    ret true;
+}
+
 fn read_patterns(filename: str) -> ~[pat] {
     let in: io::reader = io::file_reader(filename).get();
 
