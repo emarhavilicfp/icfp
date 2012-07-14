@@ -15,6 +15,8 @@ enum square {
     empty
 }
 
+type grid = ~[~[square]];
+
 impl of to_str::to_str for square {
     fn to_str() -> str {
         alt self {
@@ -27,6 +29,14 @@ impl of to_str::to_str for square {
           earth { "." }
           empty { " " }
         }
+    }
+}
+
+impl of to_str::to_str for grid {
+    fn to_str() -> str {
+        str::connect(do self.map |row| {
+            str::concat(do row.map |sq| { sq.to_str() })
+        }, "\n") + "\n"
     }
 }
 
@@ -47,7 +57,6 @@ fn square_from_char(c: char) -> square {
     }
 }
 
-type grid = ~[~[square]];
 
 fn safe(g: grid, r: uint, c: uint) -> bool {
     if r == 0 || c == 0 || c == g[0u].len() - 1u {
@@ -92,5 +101,13 @@ mod test {
     fn read_simple_board() {
         let s = #include_str("./maps/contest1.map");
         read_board_grid(io::str_reader(s));
+    }
+    
+    #[test]
+    fn deparse() {
+        let s = "####\nR*LO\n. ##\n";
+        let gr = read_board_grid(io::str_reader(s));
+        let s2 = gr.to_str();
+        assert s == s2;
     }
 }

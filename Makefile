@@ -1,7 +1,8 @@
 CFLAGS=--static
 LDFLAGS=-lpthread -lrt -ldl
+MODE ?= dynamic
 
-all: static
+all: $(MODE)
 
 ICFP_SRC = icfp.rc hello.rs board.rs
 
