@@ -13,9 +13,9 @@ use std;
 // If you want to add subdirectories, make like:
 // mod shits { mod shit1; mod shit2; }
 
-mod hello;
+// mod hello;
 
-// mod driver;
+mod driver;
 
 mod state;
 mod pattern;

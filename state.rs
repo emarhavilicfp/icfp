@@ -215,8 +215,12 @@ fn read_board(+in: io::reader) -> state {
 
     while (!in.eof()) {
         let line = in.read_line();
-        alt (str::split_char_nonempty(line, ' ')) {
-            _ { /*TODO: read the rest of the damn file */ }
+        let split = str::split_char_nonempty(line, ' ');
+        alt (split[0]) {
+            "Water" {
+                fail "WATER!";
+            }
+            _ { }
         }
     }
 

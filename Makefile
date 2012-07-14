@@ -6,7 +6,6 @@ all: $(MODE)
 
 ICFP_SRC = icfp.rc \
 	   driver.rs \
-	   hello.rs \
 	   state.rs \
 	   path.rs \
 	   pattern.rs \
