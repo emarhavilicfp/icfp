@@ -25,6 +25,10 @@ fn main(args: ~[str]) {
             'j' { res = some(state.step(D, false)); }
             'k' { res = some(state.step(U, false)); }
             'l' { res = some(state.step(R, false)); }
+            'p' {
+                if hist.len() > 1 { vec::shift(hist); }
+                again;
+            }
             '\n' { res = none; io::println(state.grid.to_str()); }
             _ { again; }
         }
