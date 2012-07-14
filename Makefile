@@ -30,7 +30,7 @@ else
 bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	rustc -c icfp.rc
 	mkdir -p ./bin
-	g++ -o ./bin/icfp ${CFLAGS} icfp.o lib/*.o lib/*.a ${LDFLAGS}
+	g++ -o ./bin/icfp ${CFLAGS} icfp.o c_signal.o lib/*.o lib/*.a ${LDFLAGS}
 
 endif
 
