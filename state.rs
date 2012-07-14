@@ -17,7 +17,7 @@ enum square {
 }
 
 type grid = ~[~[square]];
-type coord = (uint,uint);
+type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
 type state = {
     /* Intrinsics */
     flooding: option<int>,
@@ -29,11 +29,25 @@ type state = {
     water: int, /* not an option -- just 0 otherwise */
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     underwater: int, /* how long we have been underwater */
+    /* We probably need a list of rocks here. */
 };
 
-// TODO: add a record type for board, with playerpos, rockslist, and all that
 enum move {
     U, D, L, R, W, A
+}
+
+impl extensions for grid {
+    fn squares(f: fn(square)) {
+        for self.each |row| {
+            for row.each |s| { f(s) }
+        }
+    }
+    
+    fn squares_i(f: fn(square, coord)) {
+        for self.eachi |r, row| {
+            for row.eachi |c, s| { f(s, (r+1, c+1)) }
+        }
+    }
 }
 
 fn taxicab_distance(dest: coord, src: coord) {
@@ -80,9 +94,9 @@ impl of to_str::to_str for square {
 
 impl of to_str::to_str for grid {
     fn to_str() -> str {
-        str::connect(do self.map |row| {
+        str::connect(vec::reversed(do self.map |row| {
             str::concat(do row.map |sq| { sq.to_str() })
-        }, "\n") + "\n"
+        }), "\n") + "\n"
     }
 }
 
@@ -131,6 +145,7 @@ fn read_board_grid(+in: io::reader) -> grid {
         }
         vec::push(grid, row)
     }
+    grid = vec::reversed(grid);
     let width = grid[0].len();
     for grid.each |row| { assert row.len() == width }
     grid
@@ -147,7 +162,7 @@ mod test {
         let s = #include_str("./maps/contest1.map");
         read_board_grid(io::str_reader(s));
     }
-    
+
     #[test]
     fn deparse() {
         let s = "####\nR*LO\n. ##\n";
