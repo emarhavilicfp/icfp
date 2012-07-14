@@ -33,7 +33,9 @@ fn genpaths(b: state::grid, src: state::coord,
             dests: ~[state::coord]) -> (option<path>, path_state) {
     let (x, y) = src;
     let mut visited: ~[~[mut(bool, option<state::move>)]] = ~[];
-    vec::grow(visited, b.len(), vec::from_elem(b[0].len(), (false, none)));
+    for iter::repeat(b.len()) {
+        vec::push(visited, vec::from_elem(b[0].len(), (false, none)));
+    }
     visited[y-1][x-1] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
     let mut boundary = ~[(src, state::W)];
