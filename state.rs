@@ -418,7 +418,7 @@ mod test {
     #[test]
     fn deparse() {
         let s = "####\nR*LO\n. ##\n";
-        let s2 = read_board(io::str_reader(s)).to_str();
+        let s2 = read_board(io::str_reader(s)).grid.to_str();
         assert s == s2;
     }
 }
