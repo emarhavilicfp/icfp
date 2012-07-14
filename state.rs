@@ -71,6 +71,10 @@ impl extensions for grid {
         let (x, y) = c;
         self[y-1][x-1] = s;
     }
+    
+    fn lambdas() -> ~[state::coord] {
+        fail
+    }
 }
 
 fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
