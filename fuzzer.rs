@@ -45,7 +45,7 @@ fn rand_grid(r: rand::rng, m: uint, n: uint)
     for n.times {
         s += "#";
     }
-    let grid = state::read_board_grid(io::str_reader(s));
+    let grid = copy state::read_board(io::str_reader(s)).grid;
 
     let bot_x = r.gen_uint_range(1u, m - 1u);
     let bot_y = r.gen_uint_range(1u, n - 1u);
@@ -76,5 +76,6 @@ fn gen_state(m: uint, n: uint) -> state::state {
      nextflood: 0,
      underwater: 0,
      lambdas: 0,
+     lambdasleft: 0,
      score: 0}
 }
