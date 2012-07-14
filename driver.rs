@@ -99,4 +99,5 @@ fn robot(init: state::state) {
         io::print(m.to_str());
     }
     io::println("");
+    dicks
 }
