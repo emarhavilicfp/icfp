@@ -47,6 +47,14 @@ enum move {
     U, D, L, R, W, A
 }
 
+impl extensions for hash_keys {
+    fn get(c: coord, s: square) -> hash_val {
+        let (y, x) = c;
+        let (x, y) = (x - 1, y - 1);
+        self[x][y][s as uint]
+    }
+}
+
 impl extensions for grid {
     fn squares(f: fn(square)) {
         for self.each |row| {
@@ -104,12 +112,7 @@ impl extensions for grid {
         assert keys.len() == self.len();
         assert keys[0].len() == self[0].len();
         do self.squares_i |s, c| {
-            let (y, x) = c;
-            let (x, y) = (x - 1, y - 1);
-            let z = &keys[x];
-            let z = &z[y];
-            let z = z[s as uint];
-            hash ^= z;
+            hash ^= keys.get(c, s);
         }
         hash
     }
