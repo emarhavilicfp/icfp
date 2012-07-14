@@ -64,3 +64,7 @@ pkg: bin/icfp
 endif
 
 .PHONY: pkg
+
+.phony: etags
+etags:
+	ctags -e -f TAGS --options=./etc/ctags.rust -R .
