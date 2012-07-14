@@ -19,3 +19,6 @@ mod state;
 mod pattern;
 
 mod path;
+
+mod evaluate;
+mod dlist;

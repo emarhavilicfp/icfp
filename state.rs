@@ -72,10 +72,10 @@ impl extensions for move {
     }
 }
 
-fn taxicab_distance(dest: coord, src: coord) {
+fn taxicab_distance(dest: coord, src: coord) -> uint {
     let (x1,y1) = dest;
     let (x2,y2) = src;
-    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
+    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 })
 }
 
 fn move_from_char(c: char) -> move {
