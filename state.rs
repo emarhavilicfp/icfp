@@ -20,8 +20,8 @@ type grid = ~[~[square]];
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
 type state = {
     /* Intrinsics */
-    flooding: option<int>,
-    waterproof: option<int>,
+    flooding: int,
+    waterproof: int,
     
     /* These changes periodically. */
     grid: grid, /* mut? */
@@ -29,6 +29,8 @@ type state = {
     water: int, /* not an option -- just 0 otherwise */
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     underwater: int, /* how long we have been underwater */
+    lambdas: int, /* how many lambdas we have collected */
+    score: int,
     /* We probably need a list of rocks here. */
 };
 
@@ -157,8 +159,20 @@ fn read_board_grid(+in: io::reader) -> grid {
     grid
 }
 
+enum step_result {
+    stepped(state),
+    endgame(int) /* points */
+}
+
 impl extensions for state {
-    fn step(_m: move) -> state {
+    fn step(_m: move) -> step_result {
+        /* Phase one -- bust a move! */
+        fail
+        
+        /* Phase two -- update the map */
+        fail
+        
+        /* Phase three -- check for ending conditions */
         fail
     }
 }
