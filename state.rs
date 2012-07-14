@@ -36,15 +36,17 @@ enum move {
     U, D, L, R, W, A
 }
 
-fn grid_iter(g: grid, f: fn(square)) {
-    for g.each() |row| {
-        for row.each() |s| { f(s) }
+impl extensions for grid {
+    fn squares(f: fn(square)) {
+        for self.each |row| {
+            for row.each |s| { f(s) }
+        }
     }
-}
-
-fn grid_iter_i(g: grid, f: fn(square, coord)) {
-    for g.eachi() |r, row| {
-        for row.eachi() |c, s| { f(s, (r + 1, c + 1)) }
+    
+    fn squares_i(f: fn(square, coord)) {
+        for self.eachi |r, row| {
+            for row.eachi |c, s| { f(s, (r+1, c+1)) }
+        }
     }
 }
 
