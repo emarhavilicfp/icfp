@@ -1,16 +1,5 @@
 import state;
 
-/*
-      'R'  { bot }
-      '#'  { wall }
-      '*'  { rock }
-      '\\' { lambda }
-      'L'  { lift_c }
-      'O'  { lift_o }
-      '.'  { earth }
-      ' '  { empty }
-*/
-
 fn rand_map_char(r: rand::rng) -> char {
     r.gen_char_from("#*\\\\....    ")
 }
