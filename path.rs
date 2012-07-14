@@ -140,7 +140,10 @@ fn get_neighbors(p: state::coord) -> ~[(state::coord, state::move)] {
 
 #[test]
 fn test_genpath() {
-    let state = grid::read_board(io::str_reader(#include_str("./maps/flood1.map")));
-    let p = genpath(state.grid,(7,6),(2,6));
-    assert (p.len() == 13);
+    import state::*;
+    import vec::*;
+
+    let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
+    let (p, _) = genpaths(state.grid,(7,6),~[(2,6)]);
+    assert (p.is_some() && option::get(p).len() == 13);
 }
