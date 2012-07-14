@@ -12,8 +12,8 @@ fn rand_waterproof(r: rand::rng) -> int {
     r.gen_uint_range(0u, 51u) as int // MAGIC
 }
 
-fn rand_water(r: rand::rng, m: uint) -> int {
-    r.gen_uint_range(0u, m + 1u) as int
+fn rand_water(r: rand::rng, m: uint) -> uint {
+    r.gen_uint_range(0u, m + 1u)
 }
 
 fn rand_grid(r: rand::rng, m: uint, n: uint)

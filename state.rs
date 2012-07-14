@@ -26,7 +26,7 @@ type state = {
     /* These changes periodically. */
     grid: grid, /* mut? */
     robotpos: coord,
-    water: int, /* not an option -- just 0 otherwise */
+    water: uint, /* not an option -- just 0 otherwise */
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     underwater: int, /* how long we have been underwater */
     lambdas: int, /* how many lambdas we have collected */
@@ -129,7 +129,7 @@ impl of to_str::to_str for grid {
 impl of to_str::to_str for state {
     fn to_str() -> str {
         self.grid.to_str()
-         + "\n\nWater " + (int::str(self.water))
+         + "\n\nWater " + (uint::str(self.water))
          + "\nFlooding " + (int::str(self.flooding))
          + "\nWaterproof " + (int::str(self.waterproof))
          + "\n"
@@ -214,14 +214,14 @@ fn read_board(+in: io::reader) -> state {
         map_lines += line + "\n";
     }
 
-    let mut water = 0;
+    let mut water = 0u;
     let mut flooding = 0;
     let mut waterproof = 10;
     while (!in.eof()) {
         let line = in.read_line();
         let split = str::split_char_nonempty(line, ' ');
         alt (split[0]) {
-            "Water" { water = option::get(int::from_str(split[1])); }
+            "Water" { water = option::get(uint::from_str(split[1])); }
             "Flooding" { flooding = option::get(int::from_str(split[1])); }
             "Waterproof" { waterproof = option::get(int::from_str(split[1])); }
             _ { fail "Bad metadata in map file"; }
@@ -291,6 +291,9 @@ impl extensions for state {
         let mut score_ = self.score - 1;
         let mut lambdas_ = self.lambdas;
         let mut lambdasleft_ = self.lambdasleft;
+        let mut water_ = self.water;
+        let mut nextflood_ = self.nextflood;
+        let mut underwater_ = self.underwater;
         let rocks_fall = @mut false; /* everybody dies -- delayed for later */
         let mut grid_ = copy self.grid;
         let grid = copy self.grid; /* XXX point to original self.grid later if able */
@@ -339,7 +342,6 @@ impl extensions for state {
           _ { if strict {ret oops}; (x, y) }
         };
 
-
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
         
@@ -347,6 +349,23 @@ impl extensions for state {
         grid.set((x, y), empty);
         grid.set((x_, y_), bot);
         
+        /* Phase two -- update the map */
+
+        /* If we're not underwater at the beginning of the map update phase, then we get reset. */
+        if y_ > water_ {
+            underwater_ = 0;
+        }
+        
+        /* Only *after* that do we update the water.  (discussion of this was in #icfp-contest; I hope I got it right) */
+        if nextflood_ != 0 {
+            nextflood_ = nextflood_ - 1;
+            if nextflood_ == 0 {
+                water_ = water_ + 1;
+                nextflood_ = self.flooding;
+            }
+        }
+
+        /* Helper function, so we can determine if rocks fall. */
         let placerock = fn @( &grid_: grid, c: coord) {
             /* recall x_ and y_ at this point are where the robot has moved to */
             let (x, y) = c;
@@ -356,7 +375,6 @@ impl extensions for state {
             grid_[y-1][x-1] = rock;
         };
 
-        /* Phase two -- update the map */
         do grid.squares_i |sq, c| {
           let (sx, sy) = c;
           alt sq {
@@ -391,6 +409,16 @@ impl extensions for state {
             _ { }
           }
         }
+        
+        /* Blub blub blub... */
+        if y_ <= water_ {
+            underwater_ = underwater_ + 1;
+        }
+        
+        if underwater_ > self.waterproof {
+            if strict { ret oops; }
+            ret endgame(score_);
+        }
 
         /* Have we won? */
         if grid_.at((x_, y_)) == lift_o {
@@ -403,10 +431,6 @@ impl extensions for state {
             ret endgame(score_);
         }
 
-        /* XXX update water */
-
-
-
         /* Here we go! */
         ret stepped({
             flooding: self.flooding,
@@ -414,9 +438,9 @@ impl extensions for state {
 
             grid: grid_,
             robotpos: (x_, y_),
-            water: self.water,
-            nextflood: self.nextflood,
-            underwater: self.underwater,
+            water: water_,
+            nextflood: nextflood_,
+            underwater: underwater_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
             score: score_
