@@ -148,7 +148,7 @@ fn test_genpath() {
     import vec::*;
 
     let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
-    let (p, _) = genpaths(state.grid,(7,6),~[(2,6)]);
+    let (p, _) = genpaths(state.grid,(6,7),~[(6,2)]);
     assert p.is_some();
     let plen = option::get(p).len();
     assert plen == 13;
