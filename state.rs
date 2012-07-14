@@ -264,7 +264,7 @@ fn read_board(+in: io::reader) -> state {
     for grid.each |row| { assert row.len() == width }
 
     let mut (x_, yinv_) = option::get(robot);
-    let robotpos = (x_, width - yinv_);
+    let robotpos = (x_, grid.len() - yinv_);
 
     ret {
         flooding: flooding,
