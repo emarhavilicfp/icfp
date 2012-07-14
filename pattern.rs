@@ -146,12 +146,9 @@ fn read_patterns(filename: str) -> ~[pat] {
     ret rv;
 }
 
-#[test]
-fn test_some_stuff() {
-    let pats = read_patterns("patterns/some_patterns");
 
-    let s = #include_str("./maps/contest8.map");
-    let g = copy read_board(io::str_reader(s)).grid;
+fn demo_pats(g: grid) {
+    let pats = read_patterns("patterns/some_patterns");
 
     do pats.eachi() |_i, pat| {
         do g.squares_i() |_sq, coord| {
