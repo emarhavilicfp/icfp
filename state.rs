@@ -138,7 +138,7 @@ impl extensions for grid {
             ~[],
             fn @(l: ~[coord], sq: square, co: coord) -> ~[coord]
             {
-                if sq == lambda {
+                if sq == lambda || sq == lift_o{
                     vec::append_one(l, co)
                 } else { l }
             })
