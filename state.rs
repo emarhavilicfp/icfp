@@ -16,7 +16,7 @@ enum square {
     empty
 }
 
-type grid = ~[~[square]];
+type grid = ~[mut ~[mut square]];
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
 type state = {
     /* Intrinsics */
@@ -72,10 +72,10 @@ impl extensions for move {
     }
 }
 
-fn taxicab_distance(dest: coord, src: coord) {
+fn taxicab_distance(dest: coord, src: coord) -> uint {
     let (x1,y1) = dest;
     let (x2,y2) = src;
-    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 });
+    (if x1<x2 { x2-x1 } else { x1-x2 }) + (if y1<y2 { y2-y1 } else { y1-y2 })
 }
 
 fn move_from_char(c: char) -> move {
@@ -103,7 +103,8 @@ impl of to_str::to_str for square {
 impl of to_str::to_str for grid {
     fn to_str() -> str {
         str::connect(vec::reversed(do self.map |row| {
-            str::concat(do row.map |sq| { sq.to_str() })
+            pure fn sq_to_str (sq: square) -> str { unchecked { sq.to_str() } }
+            str::concat(row.map(sq_to_str))
         }), "\n") + "\n"
     }
 }
@@ -166,15 +167,15 @@ fn safely_passable(g: grid, r: uint, c: uint) -> bool {
 }
 
 fn read_board_grid(+in: io::reader) -> grid {
-    let mut grid = ~[];
+    let mut grid = ~[mut];
     for in.each_line |line| {
-        let mut row = ~[];
+        let mut row = ~[mut];
         for line.each_char |c| {
             vec::push(row, square_from_char(c))
         }
         vec::push(grid, row)
     }
-    grid = vec::reversed(grid);
+    vec::reverse(grid);
     let width = grid[0].len();
     for grid.each |row| { assert row.len() == width }
     grid
