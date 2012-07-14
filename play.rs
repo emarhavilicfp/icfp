@@ -108,3 +108,18 @@ fn play_game_prime(-s: state::state, -moves_so_far: dvec::dvec<state::move>)
 fn play_game(+s: state::state) -> (~[const state::move], state::state) {
     play_game_prime(s, dvec::dvec())
 }
+
+mod test {
+    #[test]
+    fn play_game_check_hash() {
+        let s = #include_str("./maps/contest10.map");
+        let mut s = state::read_board(io::str_reader(s));
+        let mut result = get_next_lambda(s);
+        while result != none {
+            let (newstate, _path) = option::unwrap(result);
+            assert newstate.hash() == newstate.rehash();
+            s = newstate;
+            result = get_next_lambda(s);
+        }
+    }
+}
