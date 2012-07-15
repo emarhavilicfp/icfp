@@ -74,5 +74,6 @@ fn gen_state(m: uint, n: uint) -> state::state {
      underwater: 0,
      lambdas: 0,
      lambdasleft: 0,
+     destlambda: option::none,
      score: 0}
 }

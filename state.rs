@@ -45,6 +45,7 @@ type state = {
     underwater: int, /* how long we have been underwater */
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
+    destlambda: option<coord>, /* the lambda we were last known to be pursuing */
     score: int,
     /* We probably need a list of rocks here. */
 };
@@ -448,6 +449,7 @@ fn read_board(+in: io::reader) -> state {
         underwater: 0,
         lambdas: 0,
         lambdasleft: lambdasleft_,
+        destlambda: option::none,
         score: 0,
     }
 }
@@ -649,6 +651,7 @@ impl extensions for state {
             underwater: underwater_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
+            destlambda: self.destlambda,
             score: score_
         }));
     }
