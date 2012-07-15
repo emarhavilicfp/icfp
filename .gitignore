@@ -3,3 +3,4 @@ bin
 icfp.o
 c_signal.o
 TAGS
+icfptimed
