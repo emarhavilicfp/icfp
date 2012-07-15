@@ -24,9 +24,14 @@ fn main(args: ~[str]) {
     signal::init();
     
     let path_find = path_find::brushfire::mk();
-    let engine = game_tree::bblum::mk({
-        path_find: path_find
-        with game_tree::bblum::default_opts()});
+    let engine = alt os::getenv("ENGINE") {
+      some("simple") { game_tree::simple::mk(path_find) }
+      _ {
+        game_tree::bblum::mk({
+          path_find: path_find
+          with game_tree::bblum::default_opts()})
+      }
+    };
 
     alt (os::getenv("ICFP_HUMAN")) {
         some (_) { human(state, engine); }
