@@ -1,0 +1,2 @@
+#!/bin/bash
+stdbuf -o L tr 'hjklHJKL ' 'LDURLDURW' | ./human $@

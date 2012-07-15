@@ -13,30 +13,64 @@ enum square {
     lift_c,
     lift_o,
     earth,
+    trampoline(int),
+    target(int),
+    beard(int),
+    razor,
     empty,
     // If you add a square type, remember to update the number in
     // hash_keys and gen_hashkeys.
 }
 
 type hash_val = u32;
-type hash_keys = @~[~[[hash_val]/8]];
+type hash_keys = @~[~[[hash_val]/28]];
 
-type grid = ~[mut ~[mut square]];
+type grid = {
+    grid: ~[mut ~[mut square]],
+    mut hash: hash_val,
+    keys: hash_keys,
+};
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
+
+impl extensions for coord {
+    fn +(c: coord) -> coord {
+        let (x, y) = self;
+        let (xx, yy) = c;
+        (x + xx, y + yy)
+    }
+
+    fn x() -> uint {
+        let (x, _) = self;
+        x
+    }
+
+    fn y() -> uint {
+        let (_, y) = self;
+        y
+    }
+
+    fn left() -> coord  { self + (-1,  0) }
+    fn right() -> coord { self + ( 1,  0) }
+    fn up() -> coord    { self + ( 0,  1) }
+    fn down() -> coord  { self + ( 0, -1) }
+}
+
 type state = {
     /* Intrinsics */
     flooding: int,
     waterproof: int,
-
-    hash: hash_val,
-    hash_keys: hash_keys,
+    target: ~[coord],
+    trampoline: ~[coord],
+    growth: int,
 
     /* These changes periodically. */
     grid: grid, /* mut? */
     robotpos: coord,
     water: uint, /* not an option -- just 0 otherwise */
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
+    tramp_map: ~[int], /* trampoline[t] holds the target of t */
     underwater: int, /* how long we have been underwater */
+    razors: int,
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
     score: int,
@@ -44,11 +78,39 @@ type state = {
 };
 
 enum move {
-    U, D, L, R, W, A
+    U, D, L, R, W, A, S
+}
+
+impl extensions for square {
+    fn to_uint() -> uint {
+        alt self {
+            bot { 1u }
+            wall { 2u }
+            rock { 3u }
+            lambda { 4u }
+            lift_c { 5u } 
+            lift_o { 6u }
+            earth { 7u }
+            trampoline(i) { 8u }
+            target(i) { 9u }
+            beard(i) { 10u } /* TODO: something smarter here */
+            razor { 11u }
+            empty { 12u }
+        }
+    }
+}
+
+impl extensions for hash_keys {
+    fn get(c: coord, s: square) -> hash_val {
+        let (y, x) = c;
+        let (x, y) = (x - 1, y - 1);
+        self[x][y][s.to_uint()]
+    }
 }
 
 impl extensions for grid {
     fn squares(f: fn(square)) {
+        let self = &self.grid;
         for self.each |row| {
             for row.each |s| { f(s) }
         }
@@ -57,6 +119,7 @@ impl extensions for grid {
     /* Traverses in the order specified by section 2.3 (Map Update) -- left-to-right, then bottom-to-top. */
     fn squares_i(f: fn(square, coord)) {
         // FIXME (#13): this should follow the loop protocol.
+        let self = &self.grid;
         for self.eachi |r, row| {
             for row.eachi |c, s| { f(s, (c+1, r+1)) }
         }
@@ -64,6 +127,7 @@ impl extensions for grid {
 
     fn map_squares<T>(f: fn(square) -> T) -> ~[~[T]] {
         let mut res = ~[];
+        let self = &self.grid;
         for self.each |row| {
             let mut r = ~[];
             for row.each |s| { vec::push(r, f(s)) }
@@ -78,60 +142,87 @@ impl extensions for grid {
 
     fn at(c: coord) -> square {
         let (x, y) = c;
-        self[y-1][x-1]
+        self.grid[y-1][x-1]
     }
 
     fn in(c: coord) -> bool {
+        let self = &self.grid;
         let (x, y) = c;
         ret x>0 && y>0 && y<=self.len() && x<=self[0].len();
     }
 
     fn set(c: coord, s: square) {
         let (x, y) = c;
-        self[y-1][x-1] = s;
+        self.hash ^= self.keys.get(c, self.at(c));
+        self.grid[y-1][x-1] = s;
+        self.hash ^= self.keys.get(c, self.at(c));
     }
     
     fn lambdas() -> ~[coord] {
-        self.foldl(~[], fn @(l: ~[coord], sq: square, co: coord) -> ~[coord] {
-            if sq == lambda {
-                vec::append_one(l, co)
-            } else { l }
-        })
+        self.foldl(
+            ~[],
+            fn @(l: ~[coord], sq: square, co: coord) -> ~[coord]
+            {
+                if sq == lambda || sq == lift_o{
+                    vec::append_one(l, co)
+                } else { l }
+            })
     }
 
-    fn hash(keys: hash_keys) -> hash_val {
+    fn rehash() -> hash_val {
         let mut hash = 0;
-        assert keys.len() == self.len();
-        assert keys[0].len() == self[0].len();
         do self.squares_i |s, c| {
-            let (y, x) = c;
-            let (x, y) = (x - 1, y - 1);
-            let z = &keys[x];
-            let z = &z[y];
-            let z = z[s as uint];
-            hash ^= z;
+            hash ^= self.keys.get(c, s);
         }
         hash
     }
+}
 
+impl extensions for ~[mut ~[mut square]] {
     fn gen_hashkeys() -> hash_keys {
-        let r = rand::rng();
-        @self.map_squares(|_s| [
-            r.gen_u32(), /* bot    */
-            r.gen_u32(), /* wall   */
-            r.gen_u32(), /* rock   */
-            r.gen_u32(), /* lambda */
-            r.gen_u32(), /* lift_c */
-            r.gen_u32(), /* lift_o */
-            r.gen_u32(), /* earth  */
-            r.gen_u32(), /* empty  */
-        ]/_)
+
+        pure fn f() -> [hash_val]/28 unchecked {
+            // FIXME: it'd be nice if the rng were created outside
+            let r = rand::rng();
+            [
+                r.gen_u32(), /* bot    */
+                r.gen_u32(), /* wall   */
+                r.gen_u32(), /* rock   */
+                r.gen_u32(), /* lambda */
+                r.gen_u32(), /* lift_c */
+                r.gen_u32(), /* lift_o */
+                r.gen_u32(), /* earth  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* trampoline  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* target  */
+                r.gen_u32(), /* beard  */
+                r.gen_u32(), /* razor  */
+                r.gen_u32(), /* empty  */
+                ]/_
+        }
+        
+        @self.map(|s| s.map(|_s| f()))
     }
 }
 
 fn foldl<T: copy>(z: T, g: grid, f: fn(T, square, coord) -> T) -> T {
     let mut accum = z;
-    for g.eachi |y,row| {
+    for g.grid.eachi |y,row| {
         for row.eachi |x,square| {
             accum = f(accum, square, (x+1,y+1));
         }
@@ -153,8 +244,8 @@ fn taxicab_distance(dest: coord, src: coord) -> uint {
 
 fn move_from_char(c: char) -> move {
     alt c {
-        'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A }
-        'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A }
+        'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A } 's' {S}
+        'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A } 'S' {S}
         _ { fail; /* XXX do something more reasonable here */ }
     }
 }
@@ -168,8 +259,13 @@ impl of to_str::to_str for move {
             R { "R" }
             A { "A" }
             W { "W" }
+            S { "S" }
         }
     }
+}
+
+fn tramp_to_str(i: int) -> str {
+    str::from_char((i + 'A' as int - 1) as char)
 }
 
 impl of to_str::to_str for square {
@@ -182,6 +278,10 @@ impl of to_str::to_str for square {
           lift_c { "L" }
           lift_o { "O" }
           earth { "." }
+          trampoline(i) { tramp_to_str(i) }
+          target(i) { int::str(i) }
+          beard(i) { "W" }
+          razor { "!" }
           empty { " " }
         }
     }
@@ -189,7 +289,7 @@ impl of to_str::to_str for square {
 
 impl of to_str::to_str for grid {
     fn to_str() -> str {
-        str::connect(vec::reversed(do self.map |row| {
+        str::connect(vec::reversed(do self.grid.map |row| {
             pure fn sq_to_str (sq: square) -> str { unchecked { sq.to_str() } }
             str::concat(row.map(sq_to_str))
         }), "\n") + "\n"
@@ -202,11 +302,17 @@ impl of to_str::to_str for state {
          + "\n\nWater " + (uint::str(self.water))
          + "\nFlooding " + (int::str(self.flooding))
          + "\nWaterproof " + (int::str(self.waterproof))
+         + "\nGrowth " + (int::str(self.growth))
+         + "\nRazors " + (int::str(self.razors))
+         + str::concat(vec::mapi(self.tramp_map, |i, t| {
+             if t == 0 || i == 0 { "" }
+             else { "\nTrampoline " + tramp_to_str(i as int) + " targets " + int::str(t) }
+         }))
          + "\n"
     }
 }
 
-fn square_from_char(c: char) -> square {
+fn square_from_char(c: char, g: int) -> square {
     alt c  {
       'R'  { bot }
       '#'  { wall }
@@ -215,6 +321,10 @@ fn square_from_char(c: char) -> square {
       'L'  { lift_c }
       'O'  { lift_o }
       '.'  { earth }
+      'A' to 'I' { trampoline(c as int - 'A' as int + 1) }
+      '1' to '9' { target(c as int - '1' as int + 1) }
+      'W'  { beard(g) }
+      '!'  { razor }
       ' '  { empty }
       _ {
         #error("invalid square: %?", c);
@@ -225,6 +335,7 @@ fn square_from_char(c: char) -> square {
 
 // If there's a boulder on top of me, will it fall to the right?
 fn right_fallable(g: grid, r: uint, c: uint) -> bool {
+    let g = &g.grid;
     if g[r][c] == rock || g[r][c] == lambda {
         g[r][c+1] == empty && g[r-1][c+1] == empty
     } else {
@@ -234,6 +345,7 @@ fn right_fallable(g: grid, r: uint, c: uint) -> bool {
 
 // If there's a boulder on top of me, will it fall to the left?
 fn left_fallable(g: grid, r: uint, c: uint) -> bool {
+    let g = &g.grid;
     if g[r][c] == rock {
         !(g[r][c+1] == empty && g[r-1][c+1] == empty) &&
         g[r][c-1] == empty && g[r-1][c-1] == empty
@@ -243,28 +355,28 @@ fn left_fallable(g: grid, r: uint, c: uint) -> bool {
 }
 
 // If I'm a boulder at this position, will I fall in the update step?
-fn fallable(g: grid, r: uint, c: uint) -> bool {
-    g[r-1][c] == rock &&
+fn fallable(g: grid, r: uint, c: uint) -> bool { 
+    g.grid[r-1][c] == rock &&
     left_fallable(g, r-1, c) &&
     right_fallable(g, r-1, c)
 }
 
 // Is it safe to move into this tile next turn?
 fn safe(g: grid, r: uint, c: uint) -> bool {
-    if r == 0 || c == 0 || c == g[0u].len() - 1u {
+    if r == 0 || c == 0 || c == g.grid[0u].len() - 1u {
         true
     } else {
         // Die from above
-        !((g[r+2][c] == rock && g[r+1][c] == empty)
+        !((g.grid[r+2][c] == rock && g.grid[r+1][c] == empty)
         // Die from left boulder falling right
-          || (g[r+2][c-1] == rock && right_fallable(g, r+1, c-1))
+          || (g.grid[r+2][c-1] == rock && right_fallable(g, r+1, c-1))
         // Die from right boulder falling left
-          || (g[r+2][c+1] == rock && left_fallable(g, r+1, c+1)))
+          || (g.grid[r+2][c+1] == rock && left_fallable(g, r+1, c+1)))
     }
 }
 
 fn safely_passable(g: grid, r: uint, c: uint) -> bool {
-    alt g[r][c] {
+    alt g.grid[r][c] {
       rock | wall | lift_c { false }
       _ { safe(g,r,c) }
     }
@@ -287,6 +399,9 @@ fn read_board(+in: io::reader) -> state {
     let mut water = 0u;
     let mut flooding = 0;
     let mut waterproof = 10;
+    let mut growth = 25;
+    let mut razors = 0;
+    let tramp_map = ~[mut 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     while (!in.eof()) {
         let line = in.read_line();
         let split = str::split_char_nonempty(line, ' ');
@@ -294,6 +409,13 @@ fn read_board(+in: io::reader) -> state {
             "Water" { water = option::get(uint::from_str(split[1])); }
             "Flooding" { flooding = option::get(int::from_str(split[1])); }
             "Waterproof" { waterproof = option::get(int::from_str(split[1])); }
+            "Trampoline" {
+                let tramp = str::char_at(split[1],0) as int - 'A' as int + 1;
+                let targ = str::char_at(split[3],0) as int - '1' as int + 1;
+                tramp_map[tramp] = targ;
+            }
+            "Growth" { growth = int::from_str(split[1]).get() }
+            "Razors" { razors = int::from_str(split[1]).get() }
             _ { fail "Bad metadata in map file"; }
         }
     }
@@ -305,7 +427,7 @@ fn read_board(+in: io::reader) -> state {
         let mut x = 1;
         let mut row = ~[mut];
         for line.each_char |c| {
-            let sq = square_from_char(c);
+            let sq = square_from_char(c, growth-1);
             if sq == bot {
                 alt (robot) {
                     none { robot = some ((x, yinv)); }
@@ -337,18 +459,38 @@ fn read_board(+in: io::reader) -> state {
     let robotpos = (x_, grid.len() - yinv_);
 
     let hash_keys = grid.gen_hashkeys();
-    let hash = grid.hash(hash_keys);
+
+    let grid = {
+        grid: grid,
+        mut hash: 0,
+        keys: hash_keys,
+    };
+    grid.hash = grid.rehash();
+
+    let z = (0,0);
+    let targets = ~[mut z, z, z, z, z, z, z, z, z, z];
+    let trampolines = ~[mut z, z, z, z, z, z, z, z, z, z];
+    do grid.squares_i |s, c| {
+        alt s {
+            target(i) { targets[i] = c; }
+            trampoline(i) { trampolines[i] = c; }
+            _ {}
+        }
+    }
 
     ret {
         flooding: flooding,
         waterproof: waterproof,
-        hash: hash,
-        hash_keys: hash_keys,
+        target: vec::from_mut(targets),
+        trampoline: vec::from_mut(trampolines),
+        growth: growth,
         grid: grid,
         robotpos: robotpos,
         water: water,
         nextflood: flooding,
+        tramp_map: vec::from_mut(tramp_map),
         underwater: 0,
+        razors: razors,
         lambdas: 0,
         lambdasleft: lambdasleft_,
         score: 0,
@@ -376,6 +518,8 @@ impl extensions for state {
         let mut water_ = self.water;
         let mut nextflood_ = self.nextflood;
         let mut underwater_ = self.underwater;
+        let mut razors_ = self.razors;
+        let mut tramp_map_ = self.tramp_map;
         let rocks_fall = @mut false; /* everybody dies -- delayed for later */
         let mut grid_ = copy self.grid;
         let grid = copy self.grid; /* XXX point to original self.grid later if able */
@@ -388,6 +532,7 @@ impl extensions for state {
           U { (x, y+1) }
           D { (x, y-1) }
           W { (x, y) }
+          S { (x, y) }
           A { /* Abort!  Abort! */
             ret endgame(score_ + self.lambdas * 25)
           }
@@ -409,20 +554,68 @@ impl extensions for state {
             if xp == x + 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
                 grid_.set((x+2, yp), rock);
+                grid.set((x+2, yp), rock);
                 (xp, yp)
             } else
             if xp == x - 1 && yp == y &&
                grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
                 grid_.set((x-2, yp), rock);
+                grid.set((x-2, yp), rock);
                 (xp, yp)
             } else {
                 if strict { ret oops }
                 (x, y)
             }
           }
+          trampoline(id) {
+            let targ = self.tramp_map[id];
+            let (x_, y_) = self.target[targ];
+
+            /* remove all trampolines for this target */
+            tramp_map_ = vec::mapi(tramp_map_, |i, targ_| {
+                if targ_ == targ {
+                    grid_.set(self.trampoline[i], empty);
+                    grid.set(self.trampoline[i], empty);
+                    0
+                }
+                else { targ_ }
+            });
+
+            /* remove the target */
+            grid_.set((x_, y_), empty);
+            grid.set((x_, y_), empty);
+
+            (x_, y_)
+          }
+          razor {
+              razors_ = razors_ + 1;
+              grid_.set((xp, yp), empty);
+              grid.set((xp, yp), empty);
+              (xp, yp)
+          }
 
           _ { if strict {ret oops}; (x, y) }
         };
+
+        /* non-location side effects */
+        alt move {
+            S {
+                if razors_ > 0 {
+                    razors_ =- 1;
+                    for uint::range(x_-1, x+2) |x__| {
+                        for uint::range(y-1, y+2) |y__| {
+                            let c = (x__, y__);
+                            if ! grid.in(c) {
+                                again;
+                            }
+                            let nbr = grid.at(c);
+                            alt nbr { beard(_) { grid.set(c, empty); grid_.set(c, empty); } _ {} }
+                        }
+                    }
+                }
+            }
+            _ {}
+        }
 
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
@@ -448,13 +641,13 @@ impl extensions for state {
         }
 
         /* Helper function, so we can determine if rocks fall. */
-        let placerock = fn @( &grid_: grid, c: coord) {
+        let placerock = fn @( grid_: &grid, c: coord) {
             /* recall x_ and y_ at this point are where the robot has moved to */
             let (x, y) = c;
             if x == x_ && y == (y_ + 1) {
                 *rocks_fall = true;
             }
-            grid_[y-1][x-1] = rock;
+            grid_.set((x, y), rock);
         };
 
         do grid.squares_i |sq, c| {
@@ -462,24 +655,24 @@ impl extensions for state {
           alt sq {
             rock {
               if grid.at((sx, sy-1)) == empty {
-                  placerock(grid_, (sx, sy-1));
+                  placerock(&grid_, (sx, sy-1));
                   grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == rock &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
-                  placerock(grid_, (sx+1, sy-1));
+                  placerock(&grid_, (sx+1, sy-1));
                   grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == rock &&
                         (grid.at((sx+1, sy)) != empty ||
                          grid.at((sx+1, sy-1)) != empty) &&
                         grid.at((sx-1, sy)) == empty &&
                         grid.at((sx-1, sy-1)) == empty {
-                  placerock(grid_, (sx-1, sy-1));
+                  placerock(&grid_, (sx-1, sy-1));
                   grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == lambda &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
-                  placerock(grid_, (sx+1, sy-1));
+                  placerock(&grid_, (sx+1, sy-1));
                   grid_.set((sx, sy), empty);
               }
             }
@@ -487,6 +680,24 @@ impl extensions for state {
               if lambdasleft_ == 0 {
                   grid_.set((sx, sy), lift_o);
               }
+            }
+            beard(g) {
+                let mut newg = g - 1;
+                if newg == 0 {
+                    newg = self.growth - 1;
+                    for uint::range(sx-1, sx+2) |x__| {
+                        for uint::range(sy-1, sy+2) |y__| {
+                            let c = (x__, y__);
+                            if ! grid.in(c) {
+                                again;
+                            }
+                            let nbr = grid.at(c);
+                            alt nbr { empty { grid.set(c, beard(newg)); grid_.set(c, beard(newg)); } _ {} }
+                        }
+                    }
+                }
+                grid_.set((sx, sy), beard(newg));
+                grid.set((sx, sy), beard(newg));
             }
             _ { }
           }
@@ -518,18 +729,37 @@ impl extensions for state {
         ret stepped(@mut some({
             flooding: self.flooding,
             waterproof: self.waterproof,
-            hash: grid_.hash(self.hash_keys), // FIXME: incrementally update
-            hash_keys: self.hash_keys,
+            target: self.target,
+            trampoline: self.trampoline,
+            growth: self.growth,
+
             grid: grid_,
             robotpos: (x_, y_),
             water: water_,
             nextflood: nextflood_,
+            tramp_map: tramp_map_,
             underwater: underwater_,
+            razors: razors_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
             score: score_
         }));
     }
+
+    fn hash() -> hash_val {
+        self.grid.hash
+    }
+
+    fn rehash() -> hash_val {
+        self.grid.rehash()
+    }
+}
+
+// FIXME: we can't use state here, because it's not const.
+type transposition_table<T: copy> = std::map::hashmap<hash_val, T>;
+
+fn transposition_table<T: copy>() -> transposition_table<T> {
+    std::map::hashmap(|s: hash_val| s as uint, |a, b| a == b)
 }
 
 mod test {
@@ -553,15 +783,41 @@ mod test {
     
     #[test]
     fn bouldering_problem() {
-        let s = "#####\n# R #\n# * #\n#   #\n#####\n";
+        let s = "#####\n\
+                 # R #\n\
+                 # * #\n\
+                 #   #\n\
+                 #####\n";
         let mut b = read_board(io::str_reader(s));
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
+        assert b.grid.to_str() == "#####\n\
+                                   # R #\n\
+                                   #   #\n\
+                                   # * #\n\
+                                   #####\n";
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
+        
+assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+    }
+
+    #[test]
+    fn bouldering_problem_hashes() {
+        let s = "#####\n# R #\n# * #\n#   #\n#####\n";
+        let mut b = read_board(io::str_reader(s));
+        assert b.hash() == b.rehash();
+        b = alt b.step(W, false) {
+            stepped(b) { extract_step_result(b) } _ { fail }
+        };
+        assert b.hash() == b.rehash();
         assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
+        assert b.hash() == b.rehash();
         assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
-    }
+    }    
 }

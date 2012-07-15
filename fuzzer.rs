@@ -47,8 +47,8 @@ fn rand_grid(r: rand::rng, m: uint, n: uint)
         lift_y = r.gen_uint_range(1u, n - 1u);
     }
 
-    grid[bot_x][bot_y] = state::bot;
-    grid[lift_x][lift_y] = state::lift_c;
+    grid.grid[bot_x][bot_y] = state::bot;
+    grid.grid[lift_x][lift_y] = state::lift_c;
 
     (grid, (bot_x + 1, bot_y + 1)) // NIH MAGIC
 }
@@ -58,18 +58,23 @@ fn gen_state(m: uint, n: uint) -> state::state {
 
     let (grid, robotpos) = rand_grid(r, m, n);
 
-    let hash_keys = grid.gen_hashkeys();
-    let hash = grid.hash(hash_keys);
+    let z = (0,0);
+
+    // TODO: implement trampoline fuzzing
+    // TODO: implement beard fuzzing
 
     {flooding: rand_flooding(r),
      waterproof: rand_waterproof(r),
-     hash: hash,
-     hash_keys: hash_keys,
+     target: ~[z, z, z, z, z, z, z, z, z, z],
+     trampoline: ~[z, z, z, z, z, z, z, z, z, z],
+     growth: 0,
      grid: grid,
      robotpos: robotpos,
      water: rand_water(r, m),
      nextflood: 0,
+     tramp_map: ~[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
      underwater: 0,
+     razors: 0,
      lambdas: 0,
      lambdasleft: 0,
      score: 0}

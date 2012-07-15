@@ -44,31 +44,6 @@ fn genpaths(b: state::grid, src: state::coord,
 
 }
 
-/*fn genpaths(b: state::grid, src: state::coord,
-            dests: ~[state::coord]) -> (option<path>, path_state) {
-    let (x, y) = src;
-    let mut visited: ~[~[mut(bool, ~[state::move])]] = ~[];
-    for iter::repeat(b.len()) {
-        vec::push(visited, vec::from_elem(b[0].len(), (false, ~[])));
-    }
-    visited[y-1][x-1] = (true, ~[state::W]);
-    //let mut condition: option<state::coord> = none;
-    let mut boundary = ~[(src, ~[state::W])];
-    genpath_restart(b, src, dests, visited, boundary)
-    /*
-    while condition == none {
-        boundary = propagate(b, boundary, visited);
-        condition = winner(dests, visited);
-        if (boundary.len() == 0) {
-            //shit's fucked (no reachable)
-            ret (none, (visited, boundary));
-        }
-    }
-    alt copy condition {
-      some(p) { ret (some(build_path(p, visited)), (visited, boundary)); }
-      none {fail}
-    }*/
-}*/
 
 fn genpath_restart(b: state::grid, src: state::coord,
                    dests: ~[option<state::coord>],
@@ -175,9 +150,7 @@ fn propagate(b: state::grid, boundary_list: ~[boundary_element],
 }
 
 fn get_square(p: state::coord, b: state::grid) -> state::square {
-    alt p {
-      (x, y) { b[y-1][x-1] }
-    }
+    b.at(p)
 }
 
 fn get_passable_neighbors(p: state::coord,

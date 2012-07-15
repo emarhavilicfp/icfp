@@ -1,2 +1,2 @@
 #!/bin/sh
-cat strats/$1.map | grep -v '^//' | tr UDLR kjhl | ./human maps/$1.map
+cat strats/$1.map | grep -v '^//' | ./human maps/$1.map

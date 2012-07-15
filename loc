@@ -1,0 +1,2 @@
+#!/bin/bash
+for i in `ls *.rs | grep -v dlist`; do git blame $i; done | cut -d\( -f2 | cut -d2 -f1 | sort | tr -d [:blank:] | uniq -c | sort -n

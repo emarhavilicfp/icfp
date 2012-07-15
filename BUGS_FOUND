@@ -1,3 +1,10 @@
 dlist iter-trait EACH implementation forgot to check rv
 test failures give no useful information if failure string not specified
  - a span (or even backtrace? perhaps with a verbose flag) would be nice
+ dvec add reverse; vec add reach
+
+negative constants don't work
+
+std::test should have a way to mark expected values
+
+test cases that have the same name don't do what they should

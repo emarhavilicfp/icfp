@@ -1,4 +1,4 @@
-#[link(name = "icfp",
+#[link(name = "testseq",
        vers = "0.0",
        url = "https://github.com/emarhavilicfp/icfp")];
 
@@ -13,7 +13,7 @@ use std;
 // If you want to add subdirectories, make like:
 // mod shits { mod shit1; mod shit2; }
 
-mod driver;
+mod testseq_driver;
 
 mod state;
 mod pattern;

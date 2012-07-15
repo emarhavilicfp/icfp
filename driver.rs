@@ -39,19 +39,13 @@ fn human(init: state::state) {
     let input = io::stdin();
 
     let mut bot_n = 0;
-    let mut robot_plan : option<~[const state::move]> = none;
+    let mut robot_plan : option<~[mut state::move]> = none;
 
     io::println(hist[0].to_str());
     while (!input.eof()) {
         let res;
         let state = copy hist[hist.len()-1];
         alt (input.read_char()) {
-            'q' { res = some(state.step(A, false)); robot_plan = none; }
-            ' ' { res = some(state.step(W, false)); robot_plan = none; }
-            'h' | 'a' { res = some(state.step(L, false)); robot_plan = none; }
-            'j' | 's' { res = some(state.step(D, false)); robot_plan = none; }
-            'k' | 'w' { res = some(state.step(U, false)); robot_plan = none; }
-            'l' | 'd' { res = some(state.step(R, false)); robot_plan = none; }
             'p' {
                 if hist.len() > 1 { vec::pop(hist); }
                 robot_plan = none; 
@@ -65,7 +59,7 @@ fn human(init: state::state) {
                     }
                     none {
                         bot_n = 0;
-                        let (plan, _n) = play_game(copy state);
+                        let (plan, _n) = play_game(copy state, true);
                         res = some(state.step(plan[bot_n], false));
                         robot_plan = some(plan);
                     }
@@ -73,7 +67,10 @@ fn human(init: state::state) {
                 bot_n += 1;
             }
             '\n' { res = none; io::println(state.to_str()); }
-            _ { again; }
+            c {
+                res = some(state.step(state::move_from_char(c), false));
+                robot_plan = none;
+            }
         }
 
         alt (res) {
@@ -94,7 +91,7 @@ fn human(init: state::state) {
 
 fn robot(init: state::state) {
     import state::*;
-    let (moves, _) = play::play_game(copy init);
+    let (moves, _) = play::play_game(copy init, false);
     for moves.each |m| {
         io::print(m.to_str());
     }

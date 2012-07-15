@@ -2,7 +2,7 @@ CFLAGS=--static
 LDFLAGS=-lpthread -lrt -ldl
 MODE ?= dynamic
 
-all: bin/icfp
+all: bin/icfp bin/testseq
 
 C_SRC = c_signal.c
 C_OBJ = $(C_SRC:.c=.o)
@@ -16,7 +16,9 @@ ICFP_SRC = icfp.rc \
 	   dlist.rs \
 	   heuristics.rs \
 	   play.rs \
-	   fuzzer.rs
+	   fuzzer.rs \
+	   testseq.rc \
+	   testseq_driver.rs
 
 # Remember to add modules for your .rs files in icfp.rc too!
 ifeq ($(MODE),dynamic)
@@ -25,12 +27,18 @@ bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	mkdir -p ./bin
 	rustc icfp.rc -o ./bin/icfp
 
+bin/testseq: $(ICFP_SRC) $(C_OBJ)
+	mkdir -p ./bin
+	rustc testseq.rc -o ./bin/testseq
+
 else
 
 bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	rustc -c icfp.rc
 	mkdir -p ./bin
 	g++ -o ./bin/icfp ${CFLAGS} icfp.o c_signal.o lib/*.o lib/*.a ${LDFLAGS}
+
+bin/testseq:
 
 endif
 
@@ -64,3 +72,7 @@ pkg: bin/icfp
 endif
 
 .PHONY: pkg
+
+.phony: etags
+etags:
+	ctags -e -f TAGS --options=./etc/ctags.rust -R .
