@@ -118,7 +118,7 @@ fn get_next_lambda_oneshot(s: state::state)
 }
 
 // Movelist in reverse order. End state. Best score.
-type search_result = (dvec::dvec<state::move>, state::state, uint);
+type search_result = (dvec::dvec<state::move>, state::state, int);
 
 fn add_path_prefix(finishing_moves: dvec::dvec<state::move>, p: path::path) {
     for path_for_each(p) |the_move| {
@@ -154,7 +154,8 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
         (finishing_moves, endstate, score)
     } else {
         // All done.
-        (dvec::from_elem(state::A), s, 0) // TODO add score
+        let score = s.score;
+        (dvec::from_elem(state::A), s, score)
     }
 }
 
@@ -196,7 +197,8 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
             option::unwrap(best)
         } else {
             // Terminal state. Nothing to do.
-            (dvec::from_elem(state::A), s, 0) // TODO add score
+            let score = s.score;
+            (dvec::from_elem(state::A), s, score)
         }
     }
 }
@@ -252,20 +254,24 @@ mod test {
         assert score == score4;
     }
     #[cfg(test)]
-    fn test_search_beats_greedy_help(depth: uint, bf: uint) {
-        let s = #include_str("./maps/contest10.map");
-        let mut s = state::read_board(io::str_reader(s));
+    fn test_search_vs_greedy(mapstr: str, depth: uint, bf: uint) {
+        let mut s = state::read_board(io::str_reader(mapstr));
         let (_, endstate, score) = greedy_finish(copy s, default_opts());
         let (_, endstate2, score2) = search(s, depth, default_opts_bfac(bf));
-        assert score2 > score;
-        #error["Search @ depth %u bfac %u beat greedy %u-%u",
+        #error["Search @ depth %u bfac %u beat greedy %d-%d",
                depth, bf, score2, score];
+        if score2 == score {
+            assert endstate.grid.hash == endstate2.grid.hash;
+        }
+        assert score2 > score;
     }
     #[test]
-    #[ignore]
+    #[ignore] // Passes as of this commit. Might break in the future.
     fn test_search_beats_greedy() {
-        test_search_beats_greedy_help(1, 2);
-        test_search_beats_greedy_help(2, 2);
-        test_search_beats_greedy_help(2, 3);
+        // 5 seems to be the min branch depth. Guess we find it on the 5th
+        // closest lambda.
+        test_search_vs_greedy(#include_str("./maps/contest5.map"), 1, 5);
+        test_search_vs_greedy(#include_str("./maps/contest5.map"), 2, 5);
+        test_search_vs_greedy(#include_str("./maps/contest5.map"), 3, 5);
     }
 }
