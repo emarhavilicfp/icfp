@@ -15,13 +15,15 @@ enum square {
     earth,
     trampoline(int),
     target(int),
+    beard(int),
+    razor,
     empty,
     // If you add a square type, remember to update the number in
     // hash_keys and gen_hashkeys.
 }
 
 type hash_val = u32;
-type hash_keys = @~[~[[hash_val]/26]];
+type hash_keys = @~[~[[hash_val]/28]];
 
 type grid = {
     grid: ~[mut ~[mut square]],
@@ -59,6 +61,7 @@ type state = {
     waterproof: int,
     target: ~[coord],
     trampoline: ~[coord],
+    growth: int,
 
     /* These changes periodically. */
     grid: grid, /* mut? */
@@ -67,6 +70,7 @@ type state = {
     nextflood: int, /* ticks until we flood next; ignored if not flooding */
     tramp_map: ~[int], /* trampoline[t] holds the target of t */
     underwater: int, /* how long we have been underwater */
+    razors: int,
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
     destlambda: option<coord>, /* the lambda we were last known to be pursuing */
@@ -75,7 +79,7 @@ type state = {
 };
 
 enum move {
-    U, D, L, R, W, A
+    U, D, L, R, W, A, S
 }
 
 impl extensions for square {
@@ -88,9 +92,11 @@ impl extensions for square {
             lift_c { 5u } 
             lift_o { 6u }
             earth { 7u }
-            trampoline(i) { 7u + i as uint } /* i in range 1-9 */
-            target(i) { 16u + i as uint } /* i in range 1-9 */
-            empty { 25u }
+            trampoline(i) { 8u }
+            target(i) { 9u }
+            beard(i) { 10u } /* TODO: something smarter here */
+            razor { 11u }
+            empty { 12u }
         }
     }
 }
@@ -176,7 +182,7 @@ impl extensions for grid {
 impl extensions for ~[mut ~[mut square]] {
     fn gen_hashkeys() -> hash_keys {
 
-        pure fn f() -> [hash_val]/26 unchecked {
+        pure fn f() -> [hash_val]/28 unchecked {
             // FIXME: it'd be nice if the rng were created outside
             let r = rand::rng();
             [
@@ -205,6 +211,8 @@ impl extensions for ~[mut ~[mut square]] {
                 r.gen_u32(), /* target  */
                 r.gen_u32(), /* target  */
                 r.gen_u32(), /* target  */
+                r.gen_u32(), /* beard  */
+                r.gen_u32(), /* razor  */
                 r.gen_u32(), /* empty  */
                 ]/_
         }
@@ -237,8 +245,8 @@ fn taxicab_distance(dest: coord, src: coord) -> uint {
 
 fn move_from_char(c: char) -> move {
     alt c {
-        'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A }
-        'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A }
+        'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A } 's' {S}
+        'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A } 'S' {S}
         _ { fail; /* XXX do something more reasonable here */ }
     }
 }
@@ -252,6 +260,7 @@ impl of to_str::to_str for move {
             R { "R" }
             A { "A" }
             W { "W" }
+            S { "S" }
         }
     }
 }
@@ -272,6 +281,8 @@ impl of to_str::to_str for square {
           earth { "." }
           trampoline(i) { tramp_to_str(i) }
           target(i) { int::str(i) }
+          beard(i) { "W" }
+          razor { "!" }
           empty { " " }
         }
     }
@@ -292,6 +303,8 @@ impl of to_str::to_str for state {
          + "\n\nWater " + (uint::str(self.water))
          + "\nFlooding " + (int::str(self.flooding))
          + "\nWaterproof " + (int::str(self.waterproof))
+         + "\nGrowth " + (int::str(self.growth))
+         + "\nRazors " + (int::str(self.razors))
          + str::concat(vec::mapi(self.tramp_map, |i, t| {
              if t == 0 || i == 0 { "" }
              else { "\nTrampoline " + tramp_to_str(i as int) + " targets " + int::str(t) }
@@ -300,7 +313,7 @@ impl of to_str::to_str for state {
     }
 }
 
-fn square_from_char(c: char) -> square {
+fn square_from_char(c: char, g: int) -> square {
     alt c  {
       'R'  { bot }
       '#'  { wall }
@@ -309,9 +322,11 @@ fn square_from_char(c: char) -> square {
       'L'  { lift_c }
       'O'  { lift_o }
       '.'  { earth }
-      ' '  { empty }
       'A' to 'I' { trampoline(c as int - 'A' as int + 1) }
       '1' to '9' { target(c as int - '1' as int + 1) }
+      'W'  { beard(g) }
+      '!'  { razor }
+      ' '  { empty }
       _ {
         #error("invalid square: %?", c);
         fail
@@ -385,6 +400,8 @@ fn read_board(+in: io::reader) -> state {
     let mut water = 0u;
     let mut flooding = 0;
     let mut waterproof = 10;
+    let mut growth = 25;
+    let mut razors = 0;
     let tramp_map = ~[mut 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     while (!in.eof()) {
         let line = in.read_line();
@@ -398,6 +415,8 @@ fn read_board(+in: io::reader) -> state {
                 let targ = str::char_at(split[3],0) as int - '1' as int + 1;
                 tramp_map[tramp] = targ;
             }
+            "Growth" { growth = int::from_str(split[1]).get() }
+            "Razors" { razors = int::from_str(split[1]).get() }
             _ { fail "Bad metadata in map file"; }
         }
     }
@@ -409,7 +428,7 @@ fn read_board(+in: io::reader) -> state {
         let mut x = 1;
         let mut row = ~[mut];
         for line.each_char |c| {
-            let sq = square_from_char(c);
+            let sq = square_from_char(c, growth-1);
             if sq == bot {
                 alt (robot) {
                     none { robot = some ((x, yinv)); }
@@ -465,12 +484,14 @@ fn read_board(+in: io::reader) -> state {
         waterproof: waterproof,
         target: vec::from_mut(targets),
         trampoline: vec::from_mut(trampolines),
+        growth: growth,
         grid: grid,
         robotpos: robotpos,
         water: water,
         nextflood: flooding,
         tramp_map: vec::from_mut(tramp_map),
         underwater: 0,
+        razors: razors,
         lambdas: 0,
         lambdasleft: lambdasleft_,
         destlambda: option::none,
@@ -499,6 +520,7 @@ impl extensions for state {
         let mut water_ = self.water;
         let mut nextflood_ = self.nextflood;
         let mut underwater_ = self.underwater;
+        let mut razors_ = self.razors;
         let mut tramp_map_ = self.tramp_map;
         let rocks_fall = @mut false; /* everybody dies -- delayed for later */
         let mut grid_ = copy self.grid;
@@ -512,6 +534,7 @@ impl extensions for state {
           U { (x, y+1) }
           D { (x, y-1) }
           W { (x, y) }
+          S { (x, y) }
           A { /* Abort!  Abort! */
             ret endgame(score_ + self.lambdas * 25)
           }
@@ -566,9 +589,35 @@ impl extensions for state {
 
             (x_, y_)
           }
+          razor {
+              razors_ = razors_ + 1;
+              grid_.set((xp, yp), empty);
+              grid.set((xp, yp), empty);
+              (xp, yp)
+          }
 
           _ { if strict {ret oops}; (x, y) }
         };
+
+        /* non-location side effects */
+        alt move {
+            S {
+                if razors_ > 0 {
+                    razors_ =- 1;
+                    for uint::range(x_-1, x+2) |x__| {
+                        for uint::range(y-1, y+2) |y__| {
+                            let c = (x__, y__);
+                            if ! grid.in(c) {
+                                again;
+                            }
+                            let nbr = grid.at(c);
+                            alt nbr { beard(_) { grid.set(c, empty); grid_.set(c, empty); } _ {} }
+                        }
+                    }
+                }
+            }
+            _ {}
+        }
 
         grid_.set((x, y), empty);
         grid_.set((x_, y_), bot);
@@ -634,6 +683,24 @@ impl extensions for state {
                   grid_.set((sx, sy), lift_o);
               }
             }
+            beard(g) {
+                let mut newg = g - 1;
+                if newg == 0 {
+                    newg = self.growth - 1;
+                    for uint::range(sx-1, sx+2) |x__| {
+                        for uint::range(sy-1, sy+2) |y__| {
+                            let c = (x__, y__);
+                            if ! grid.in(c) {
+                                again;
+                            }
+                            let nbr = grid.at(c);
+                            alt nbr { empty { grid.set(c, beard(newg)); grid_.set(c, beard(newg)); } _ {} }
+                        }
+                    }
+                }
+                grid_.set((sx, sy), beard(newg));
+                grid.set((sx, sy), beard(newg));
+            }
             _ { }
           }
         }
@@ -666,6 +733,7 @@ impl extensions for state {
             waterproof: self.waterproof,
             target: self.target,
             trampoline: self.trampoline,
+            growth: self.growth,
 
             grid: grid_,
             robotpos: (x_, y_),
@@ -673,6 +741,7 @@ impl extensions for state {
             nextflood: nextflood_,
             tramp_map: tramp_map_,
             underwater: underwater_,
+            razors: razors_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
             destlambda: self.destlambda,
