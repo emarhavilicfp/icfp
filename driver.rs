@@ -1,5 +1,6 @@
 import io::reader_util;
 import game_tree::game_tree;
+import str;
 
 fn main(args: ~[str]) {
     import result::*;
@@ -47,6 +48,7 @@ fn human(init: state::state, engine: game_tree) {
     pattern::demo_pats(init.grid);
 
     let mut hist = ~[copy init];
+    let mut moves = ~[];
     let input = io::stdin();
 
     let mut bot_n = 0;
@@ -58,23 +60,25 @@ fn human(init: state::state, engine: game_tree) {
         let state = copy hist[hist.len()-1];
         alt (input.read_char()) {
             'p' {
-                if hist.len() > 1 { vec::pop(hist); }
+                if hist.len() > 1 { vec::pop(hist); vec::pop(moves); }
                 robot_plan = none; 
                 again;
             }
             'n' {
+                let mut move : state::move;
                 alt robot_plan {
                     some(plan) {
-                        let shit : state::move = plan[bot_n];
-                        res = some(state.step(shit, false));
+                        move = plan[bot_n];
                     }
                     none {
                         bot_n = 0;
                         let plan = engine.get_path(copy init);
-                        res = some(state.step(plan[bot_n], false));
+                        move = plan[bot_n];
                         robot_plan = some(plan);
                     }
                 }
+                vec::push(moves, move);
+                res = some(state.step(move, false));
                 bot_n += 1;
             }
             '\n' { res = none; io::println(state.to_str()); }
@@ -83,7 +87,9 @@ fn human(init: state::state, engine: game_tree) {
                 robot_plan = none;
             }
             c {
-                res = some(state.step(state::move_from_char(c), false));
+                let move = state::move_from_char(c);
+                vec::push(moves, move);
+                res = some(state.step(move, false));
                 robot_plan = none;
             }
         }
@@ -94,7 +100,11 @@ fn human(init: state::state, engine: game_tree) {
                     stepped(newstate) {
                         vec::push(hist, extract_step_result(newstate));
                     }
-                    endgame(score) { io::println(#fmt("Finished with %d points.", score)); break; }
+                    endgame(score) {
+                        io::println(#fmt("Finished with %d points.", score));
+                        io::println(str::concat(vec::map(moves, |m| { m.to_str() })));
+                        break;
+                    }
                     oops { io::println("Oops.  Bye."); break; }
                 }
             }
