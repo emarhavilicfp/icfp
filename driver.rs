@@ -1,4 +1,5 @@
 import io::reader_util;
+import game_tree::game_tree;
 
 fn main(args: ~[str]) {
     import result::*;
@@ -21,14 +22,19 @@ fn main(args: ~[str]) {
     let state = state::read_board(io::str_reader(map));
 
     signal::init();
+    
+    let path_find = path_find::brushfire::mk();
+    let engine = game_tree::bblum::mk({
+        path_find: path_find
+        with game_tree::bblum::default_opts()});
 
     alt (os::getenv("ICFP_HUMAN")) {
-        some (_) { human(state); }
-        none { robot(state); }
+        some (_) { human(state, engine); }
+        none { robot(state, engine); }
     }
 }
 
-fn human(init: state::state) {
+fn human(init: state::state, engine: game_tree) {
     import to_str::*;
     import state::*;
 
@@ -58,7 +64,7 @@ fn human(init: state::state) {
                     }
                     none {
                         bot_n = 0;
-                        let plan = game_tree::bblum::mk(true).get_path(copy init);
+                        let plan = engine.get_path(copy init);
                         res = some(state.step(plan[bot_n], false));
                         robot_plan = some(plan);
                     }
@@ -88,9 +94,8 @@ fn human(init: state::state) {
 
 }
 
-fn robot(init: state::state) {
+fn robot(init: state::state, engine: game_tree) {
     import state::*;
-    let engine = game_tree::bblum::mk(false);
     
     let moves = engine.get_path(copy init);
     for moves.each |m| {

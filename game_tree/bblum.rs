@@ -40,11 +40,17 @@ fn add_path_prefix(finishing_moves: dvec::dvec<state::move>, p: path::path) {
 }
 
 type search_opts = {
-    branch_factor: uint, verbose: bool, killable: bool, max_depth: uint
+    branch_factor: uint,
+    verbose: bool,
+    killable: bool,
+    max_depth: uint,
+    path_find: path_find
 };
+
 fn default_opts() -> search_opts {
-    { branch_factor: 1, verbose: false,
-      killable: true,   max_depth: uint::max_value }
+    { branch_factor: branch_factor() /* 1 */, verbose: false,
+      killable: true,   max_depth: 10 /*uint::max_value*/,
+      path_find: path_find::brushfire::mk() }
 }
 fn default_opts_verbose(verbose: bool) -> search_opts {
     { verbose: verbose with default_opts() }
@@ -85,7 +91,7 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
 fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     let mut best = none;
     let mut best_score = none; // Redundant. To avoid unwrapping 'best'.
-    let pathlist = path_find::brushfire::mk().get_paths(s);
+    let pathlist = o.path_find.get_paths(s);
     // Test for time run out.
     if signal::signal_received() && o.killable {
         let score = s.score;
@@ -166,9 +172,7 @@ impl of game_tree for search_opts {
     }
 }
 
-fn mk(verbose: bool) -> game_tree {
-    let o = { max_depth: 10, branch_factor: branch_factor()
-              with default_opts_verbose(verbose) };
+fn mk(o: search_opts) -> game_tree {
     o as game_tree
 }
 
