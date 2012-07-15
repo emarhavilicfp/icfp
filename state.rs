@@ -691,12 +691,11 @@ impl extensions for state {
                                 again;
                             }
                             let nbr = grid.at(c);
-                            alt nbr { empty { grid.set(c, beard(newg)); grid_.set(c, beard(newg)); } _ {} }
+                            alt nbr { empty { grid_.set(c, beard(newg)); } _ {} }
                         }
                     }
                 }
                 grid_.set((sx, sy), beard(newg));
-                grid.set((sx, sy), beard(newg));
             }
             _ { }
           }
