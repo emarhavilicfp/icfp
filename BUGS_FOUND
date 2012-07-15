@@ -6,3 +6,5 @@ test failures give no useful information if failure string not specified
 negative constants don't work
 
 std::test should have a way to mark expected values
+
+test cases that have the same name don't do what they should

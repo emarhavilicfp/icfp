@@ -28,3 +28,6 @@ mod heuristics;
 mod play;
 
 mod signal;
+
+#[cfg(test)]
+mod sim_test;
