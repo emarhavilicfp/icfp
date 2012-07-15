@@ -62,7 +62,8 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
         ret (dvec::from_elem(state::A), s, score);
     }
     // Attempt to do something next.
-    let result = path_find::brushfire::mk(s).next_target_path(s);
+    let thunk = path_find::brushfire::mk().get_paths(s);
+    let result = thunk();
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
         if o.verbose {
@@ -84,7 +85,7 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
 fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     let mut best = none;
     let mut best_score = none; // Redundant. To avoid unwrapping 'best'.
-    let pathlist = path_find::brushfire::mk(s);
+    let pathlist = path_find::brushfire::mk().get_paths(s);
     // Test for time run out.
     if signal::signal_received() && o.killable {
         let score = s.score;
@@ -97,7 +98,7 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
         // Iterate over possibilities.
         // TODO: maybe prune later?
         for iter::repeat(o.branch_factor) {
-            let target_opt = pathlist.next_target_path(s);
+            let target_opt = pathlist();
             if target_opt.is_some() {
                 let (newstate,path) = option::unwrap(target_opt);
                 // Recurse.
@@ -173,12 +174,14 @@ mod test {
     fn test_play_game_check_hash() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
-        let mut result = path_find::brushfire::mk(s).next_target_path(s);
+        let mut thunk = path_find::brushfire::mk().get_paths(s);
+        let mut result = thunk();
         while result != none {
             let (newstate, _path) = option::unwrap(result);
             assert newstate.hash() == newstate.rehash();
             s = newstate;
-            result = path_find::brushfire::mk(s).next_target_path(s);
+            thunk = path_find::brushfire::mk().get_paths(s);
+            result = thunk();
         }
     }
     #[test]

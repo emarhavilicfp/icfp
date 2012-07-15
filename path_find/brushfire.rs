@@ -8,10 +8,14 @@ import heuristics::*;
 
 import path::target;
 
-impl of path_find for bblums_pathlist {
-    fn next_target_path(s: state::state)
-            -> option<(state::state, path::path)> {
-        get_next_lambda(s, self)
+enum t {_dummy}
+impl of path_find for t {
+    fn get_paths(s: state::state) ->
+            (fn @() -> option<(state::state, path::path)>) {
+        let it = mk_iter(s);
+        fn @() -> option<(state::state, path::path)> {
+            get_next_lambda(s, it)
+        }
     }
 }
 
@@ -21,11 +25,16 @@ type bblums_pathlist = {
     targets: ~[mut option<state::coord>]
 };
 
-fn mk(s: state::state) -> path_find {
+fn mk() -> path_find {
+    let t = _dummy;
+    t as path_find
+}
+
+fn mk_iter(s: state::state) -> bblums_pathlist {
     let t = map_mut(s.grid.lambdas(), |x| some(x));
     let state: bblums_pathlist =
         { pathstate: (@mut none, @mut none), targets: t };
-    state as path_find
+    state
 }
 
 /****************************************************************************
