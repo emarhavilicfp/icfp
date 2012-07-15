@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	struct sigaction act;
 	
 	act.sa_flags = 0;
-	act.sa_mask = 0;
+	sigemptyset(&act.sa_mask);
 	act.sa_handler = _handler;
 	sigaction(SIGALRM, &act, NULL);
 	
