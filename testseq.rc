@@ -1,0 +1,33 @@
+#[link(name = "testseq",
+       vers = "0.0",
+       url = "https://github.com/emarhavilicfp/icfp")];
+
+#[comment = "An ICFP attempt in Rust by Emarhavil Heavy Industries"];
+
+#[warn(no_vecs_not_implicitly_copyable)];
+
+use std;
+
+// Add your modules here, corresponding with your filenames.
+// REMEMBER TO ADD YOUR .rs FILES IN THE MAKEFILE TOO!
+// If you want to add subdirectories, make like:
+// mod shits { mod shit1; mod shit2; }
+
+mod testseq_driver;
+
+mod state;
+mod pattern;
+
+mod path;
+
+mod evaluate;
+mod dlist;
+
+mod fuzzer;
+mod heuristics;
+mod play;
+
+mod signal;
+
+#[cfg(test)]
+mod sim_test;
