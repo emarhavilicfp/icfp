@@ -31,7 +31,6 @@ fn main(args: ~[str]) {
 fn human(init: state::state) {
     import to_str::*;
     import state::*;
-    import play::play_game;
 
     pattern::demo_pats(init.grid);
 
@@ -39,7 +38,7 @@ fn human(init: state::state) {
     let input = io::stdin();
 
     let mut bot_n = 0;
-    let mut robot_plan : option<~[mut state::move]> = none;
+    let mut robot_plan : option<~[state::move]> = none;
 
     io::println(hist[0].to_str());
     while (!input.eof()) {
@@ -59,7 +58,7 @@ fn human(init: state::state) {
                     }
                     none {
                         bot_n = 0;
-                        let (plan, _n) = play_game(copy state, true);
+                        let plan = game_tree::bblum::mk(true).get_path(copy init);
                         res = some(state.step(plan[bot_n], false));
                         robot_plan = some(plan);
                     }
@@ -91,7 +90,9 @@ fn human(init: state::state) {
 
 fn robot(init: state::state) {
     import state::*;
-    let (moves, _) = play::play_game(copy init, false);
+    let engine = game_tree::bblum::mk(false);
+    
+    let moves = engine.get_path(copy init);
     for moves.each |m| {
         io::print(m.to_str());
     }

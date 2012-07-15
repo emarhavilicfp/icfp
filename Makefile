@@ -13,8 +13,8 @@ ICFP_SRC = icfp.rc \
 	   evaluate.rs \
 	   dlist.rs \
 	   heuristics.rs \
-	   play.rs \
 	   path_find.rs path_find/brushfire.rs \
+	   game_tree.rs game_tree/bblum.rs \
 	   fuzzer.rs \
 	   testseq.rc \
 	   testseq_driver.rs

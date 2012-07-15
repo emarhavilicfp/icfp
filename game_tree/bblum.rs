@@ -157,22 +157,26 @@ fn iterative_search(-s: state::state, o: search_opts) -> search_result {
     best_result
 }
 
-fn play_game(+s: state::state, verbose: bool)
-        -> (~[mut state::move], state::state) {
+impl of game_tree for search_opts {
+    fn get_path(+s: state::state) -> ~[state::move] {
+        let (moves_rev, _endstate, _score) = iterative_search(s, self);
+        let moves = dvec::unwrap(moves_rev);
+        vec::reverse(moves);
+        vec::from_mut(moves)
+    }
+}
+
+fn mk(verbose: bool) -> game_tree {
     let o = { max_depth: 10, branch_factor: branch_factor()
               with default_opts_verbose(verbose) };
-    let (moves_rev, endstate, _score) = iterative_search(s, o);
-        // greedy_finish(s, default_opts_verbose(verbose));
-    let moves = dvec::unwrap(moves_rev);
-    vec::reverse(moves);
-    (moves,endstate)
+    o as game_tree
 }
 
 mod test {
     #[test]
     #[ignore]
     fn test_play_game_check_hash() {
-        let s = #include_str("./maps/contest10.map");
+        let s = #include_str("../maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
         let mut thunk = path_find::brushfire::mk().get_paths(s);
         let mut result = thunk();
@@ -187,7 +191,7 @@ mod test {
     #[test]
     #[ignore]
     fn test_zero_depth_equals_greedy() {
-        let s = #include_str("./maps/contest10.map");
+        let s = #include_str("../maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
         let (_, endstate, score) = greedy_finish(copy s, default_opts());
         let (_, endstate2, score2) = search(copy s, 0, default_opts_bfac(0));
@@ -200,7 +204,7 @@ mod test {
     #[test]
     #[ignore]
     fn test_one_bf_equals_greedy() {
-        let s = #include_str("./maps/contest10.map");
+        let s = #include_str("../maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
         let (_, endstate, score) = greedy_finish(copy s, default_opts());
         let (_, endstate2, score2) = search(copy s, 1, default_opts_bfac(1));
@@ -230,8 +234,8 @@ mod test {
     fn test_search_beats_greedy() {
         // 5 seems to be the min branch depth. Guess we find it on the 5th
         // closest lambda.
-        test_search_vs_greedy(#include_str("./maps/contest5.map"), 1, 5);
-        test_search_vs_greedy(#include_str("./maps/contest5.map"), 2, 5);
-        test_search_vs_greedy(#include_str("./maps/contest5.map"), 3, 5);
+        test_search_vs_greedy(#include_str("../maps/contest5.map"), 1, 5);
+        test_search_vs_greedy(#include_str("../maps/contest5.map"), 2, 5);
+        test_search_vs_greedy(#include_str("../maps/contest5.map"), 3, 5);
     }
 }
