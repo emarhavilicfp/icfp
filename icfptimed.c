@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 			perror("execv");
 	} else if (pid > 0) {
 		int rv;
-		alarm(3);
+		alarm(10);
 		rv = wait(NULL);
 		if (rv > 0)
 			return 0;
