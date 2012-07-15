@@ -6,6 +6,9 @@ import state::*;
 import heuristics::*;
 import dvec;
 import dvec::extensions;
+import signal;
+import pathlist;
+import pathlist::*;
 
 // BUG: add this to libstd::util
 // pure fn rational_mul(x: rational, y: rational) -> rational {
@@ -25,106 +28,7 @@ fn reach<T>(v: &[const T], blk: fn(T) -> bool) {
     }
 }
 
-/****************************************************************************
- * Glue
- ****************************************************************************/
-
-// We use the Brushfire algorithm. Here is a webpage that mentions it:
-// http://andrewferguson.net/2009/04/06/a-short-guide-to-robot-path-planning/
-type brushfire = path::path_state;
-
-fn path_len(p: path::path) -> uint { vec::len(p) }
-
 fn path_for_each(p: path::path, blk: fn(state::move) -> bool) { reach(p,blk) }
-
-
-fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
-    alt path::apply(_ml, _s, false) {
-        state::stepped(state) { some(state::extract_step_result(state)) }
-        state::endgame(*) | state::oops { none } // XXX fix endgame
-    }
-}
-
-/// This finds paths that don't require traversing any unsafe things.
-///
-/// Unsafety is defined as moves that cause side effects, such as
-/// dislodging a boulder.
-fn path_easy(s: state::state, fire: @mut option<brushfire>)
-        -> option<path::path> {
-    let lambdas = s.grid.lambdas();
-    if fire.is_some() {
-        let mut shit = none;
-        *fire <-> shit;
-        let (shit1, shit2) = option::unwrap(shit);
-        // Get path and new state
-        let (pathres, stateres) =
-            path::genpath_restart(s.grid, s.robotpos, lambdas, shit1, shit2);
-        *fire = some(stateres);
-        pathres
-    } else {
-        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, lambdas);
-        *fire = some(stateres);
-        pathres
-    }
-
-}
-
-/// Attempts to find paths, possibly using dangerous moves. We
-/// traverse dangeroues moves by patterns.
-fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>)
-        -> option<path::path> { none }
-
-/****************************************************************************
- * Code
- ****************************************************************************/
-
-type path_state = (@mut option<brushfire>, @mut option<brushfire>);
-fn initial_path_state() -> path_state { (@mut none, @mut none) }
-
-// Finds a path to the lambda that makes us happiest.
-fn get_next_lambda(s: state::state, ps: path_state)
-        -> option<(state::state,path::path)> {
-    let (easy_state,aggr_state) = ps;
-    let mut easy = path_easy(s, easy_state);
-    let mut aggressive = path_aggressive(s, aggr_state);
-
-    // Diamonds are forever.
-    loop {
-        // Did we find *nothing*? God damn.
-        if aggressive.is_none() && easy.is_none() {
-            ret none;
-        // See if we want to use the aggressive path. Maybe there is no easy
-        // path, or maybe they all suck.
-        } else if easy.is_none() ||
-                  (aggressive.is_some() &&
-                   path_aggr_weight(path_len(aggressive.expect("asdf")))
-                   < path_len(easy.expect("ghjkl"))) {
-            let try_path = aggressive.expect("Ben's boolean logic bad (1)");
-            // Bouldered path was 2/3 the length of easy path.
-            let newstate = state_apply(s, try_path);
-            if newstate.is_some() {
-                ret some((option::unwrap(newstate), try_path)); // Satisfied!
-            } else {
-                aggressive = path_aggressive(s, aggr_state);
-                again;
-            }
-        } else {
-            let try_path = easy.expect("Ben's boolean logic bad (2)");
-            // Easy path seemed shorter, or "not too much" longer.
-            let newstate = state_apply(s, try_path);
-            if newstate.is_some() {
-                ret some((option::unwrap(newstate), try_path)); // Satisfied!
-            } else {
-                easy = path_easy(s, easy_state);
-                again;
-            }
-        }
-    }
-}
-fn get_next_lambda_oneshot(s: state::state)
-        -> option<(state::state,path::path)> {
-    get_next_lambda(s, initial_path_state())
-}
 
 // Movelist in reverse order. End state. Best score.
 type search_result = (dvec::dvec<state::move>, state::state, int);
@@ -135,21 +39,30 @@ fn add_path_prefix(finishing_moves: dvec::dvec<state::move>, p: path::path) {
     }
 }
 
-type search_opts = { branch_factor: uint, verbose: bool };
+type search_opts = {
+    branch_factor: uint, verbose: bool, killable: bool, max_depth: uint
+};
 fn default_opts() -> search_opts {
-    { branch_factor: 1, verbose: false }
+    { branch_factor: 1, verbose: false,
+      killable: true,   max_depth: uint::max_value }
 }
 fn default_opts_verbose(verbose: bool) -> search_opts {
-    { branch_factor: 1, verbose: verbose }
+    { verbose: verbose with default_opts() }
 }
 fn default_opts_bfac(bf: uint) -> search_opts {
-    { branch_factor: bf, verbose: false }
+    { branch_factor: bf with default_opts() }
 }
 
 // Repeatedly finds lambdas (hopefully).
+// TODO: bblum: add a 'int how_hungry' param; -1 for play until end.
 fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
+    // Test for time run out. TODO: Maybe check if it's save to finish greedy
+    if signal::signal_received() && o.killable {
+        let score = s.score;
+        ret (dvec::from_elem(state::A), s, score);
+    }
     // Attempt to do something next.
-    let result = get_next_lambda_oneshot(s);
+    let result = mk_bblums_pathlist().next_target_path(s);
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
         if o.verbose {
@@ -171,7 +84,12 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
 fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     let mut best = none;
     let mut best_score = none; // Redundant. To avoid unwrapping 'best'.
-    let path_state = initial_path_state();
+    let pathlist = mk_bblums_pathlist();
+    // Test for time run out.
+    if signal::signal_received() && o.killable {
+        let score = s.score;
+        ret (dvec::from_elem(state::A), s, score);
+    }
     // Test for horizon node.
     if depth == 0 {
         ret greedy_finish(s, o);
@@ -179,7 +97,7 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
         // Iterate over possibilities.
         // TODO: maybe prune later?
         for iter::repeat(o.branch_factor) {
-            let target_opt = get_next_lambda(s, path_state);
+            let target_opt = pathlist.next_target_path(s);
             if target_opt.is_some() {
                 let (newstate,path) = option::unwrap(target_opt);
                 // Recurse.
@@ -212,10 +130,38 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     }
 }
 
+#[always_inline]
+fn score_result(r: search_result) -> int { alt r { (_,_,s) { s } } }
+
+fn iterative_search(-s: state::state, o: search_opts) -> search_result {
+    let mut depth = 1;
+    let mut best_result = greedy_finish(copy s, { killable: false with o });
+    // Loop until (A) Reach maximum specified depth, (B) signalled
+    while depth <= o.max_depth && !(signal::signal_received() && o.killable) {
+        #error["SEARCH: Searching depth %u; best so far %d",
+             depth, score_result(best_result)];
+        // Search.
+        let result = search(copy s, depth, o);
+        // Interpret findings.
+        if (score_result(result) > score_result(best_result)) {
+            #error["SEARCH: Found new best %d", score_result(result)];
+            best_result = result;
+        } else if (score_result(result) == score_result(best_result)) {
+            #error["SEARCH: Nothing new"];
+        } else {
+            #error["SEARCH: Worse..?"];
+        }
+        depth += 1;
+    }
+    best_result
+}
+
 fn play_game(+s: state::state, verbose: bool)
         -> (~[mut state::move], state::state) {
-    let (moves_rev, endstate, _score) =
-        greedy_finish(s, default_opts_verbose(verbose));
+    let o = { max_depth: 10, branch_factor: branch_factor()
+              with default_opts_verbose(verbose) };
+    let (moves_rev, endstate, _score) = iterative_search(s, o);
+        // greedy_finish(s, default_opts_verbose(verbose));
     let moves = dvec::unwrap(moves_rev);
     vec::reverse(moves);
     (moves,endstate)
@@ -226,12 +172,12 @@ mod test {
     fn test_play_game_check_hash() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
-        let mut result = get_next_lambda_oneshot(s);
+        let mut result = mk_bblums_pathlist().next_target_path(s);
         while result != none {
             let (newstate, _path) = option::unwrap(result);
             assert newstate.hash() == newstate.rehash();
             s = newstate;
-            result = get_next_lambda_oneshot(s);
+            result = mk_bblums_pathlist().next_target_path(s);
         }
     }
     #[test]

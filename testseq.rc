@@ -26,6 +26,7 @@ mod dlist;
 mod fuzzer;
 mod heuristics;
 mod play;
+mod pathlist;
 
 mod signal;
 

@@ -16,6 +16,7 @@ ICFP_SRC = icfp.rc \
 	   dlist.rs \
 	   heuristics.rs \
 	   play.rs \
+	   pathlist.rs \
 	   fuzzer.rs \
 	   testseq.rc \
 	   testseq_driver.rs
