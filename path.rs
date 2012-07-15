@@ -7,7 +7,7 @@ import state::{extensions, coord};
 import dvec;
 import vec;
 import vec::extensions;
-
+import targets::target;
 
 type boundary_element = (state::coord, ~[state::move]);
 type path_state = (~[~[mut (bool, ~[state::move])]], ~[boundary_element]);
@@ -17,23 +17,6 @@ macro_rules! move {
     { $x:expr } => { unsafe { let y <- *ptr::addr_of($x); y } }
 }
 
-/// A thing that the pathfinder will try to route through.
-trait target {
-    /// Where is this target?
-    pure fn coord() -> coord;
-
-    /// How valuable is this target?
-    ///
-    /// Can be negative if it costs you something to go here. An
-    /// example is in patterns.
-    fn score() -> int;
-
-    /// Call this when you get to this target.
-    ///
-    /// Targets like lambdas don't move you, but some do. Examples are
-    /// traversing patterns or trampolines.
-    pure fn traverse() -> (coord, path);
-}
 
 /// This is lambda-only implementation of target.
 impl of target for state::coord {
@@ -82,8 +65,9 @@ fn apply(p: path, +st: state::state, strict: bool) -> state::step_result {
     ret state::stepped(@mut some(st_));
 }
 
-fn genpaths<T: copy target>(b: state::grid, src: state::coord, 
-             dests: &[const option<T>]) 
+fn genpaths<T: copy target>(b: state::grid, src: state::coord,
+             dests: &[const option<T>],
+             safe: bool)
              -> (option<(path, T)>, path_state) {
     let (x, y) = src;
     let mut visited: ~[~[mut(bool, ~[state::move])]] = ~[];
@@ -93,7 +77,7 @@ fn genpaths<T: copy target>(b: state::grid, src: state::coord,
     visited[y-1][x-1] = (true, ~[state::W]);
     //let mut condition: option<state::coord> = none;
     let mut boundary = ~[(src, ~[state::W])];
-    genpath_restart(b, src, dests, visited, boundary)
+    genpath_restart(b, src, dests, visited, boundary, safe)
 
 }
 
@@ -101,7 +85,8 @@ fn genpath_restart<T: copy target>
     (b: state::grid, src: state::coord,
      dests: &[const option<T>],
      +v: ~[~[mut (bool, ~[state::move])]],
-     bound: ~[boundary_element]) 
+     bound: ~[boundary_element],
+     safe: bool)
     -> (option<(path, T)>, path_state)
 {
     let mut visited = v;
@@ -110,7 +95,7 @@ fn genpath_restart<T: copy target>
     visited[y-1][x-1] = (true, ~[state::W]);
     let mut condition = none;
     while condition == none {
-        boundary = propagate(b, boundary, visited);
+        boundary = propagate(b, boundary, visited, safe);
         condition = winner(dests, visited);
         if (boundary.len() == 0) {
             //shit's fucked (no reachable)
@@ -118,7 +103,12 @@ fn genpath_restart<T: copy target>
         }
     }
     alt copy condition {
-      some(i) { ret (some((build_path(option::get(dests[i]), visited), option::get(dests[i]))), (visited, boundary)); }
+      some(i) {
+        let p = option::get(dests[i])
+        let (c,path) = p.traverse();
+        let nubPath = build_path(p, visited);
+        let finalPath = vec::append(nubPath, path);
+        ret (some((finalPath, p)), (visited, boundary)); }
       none {fail}
     }
 }
@@ -191,11 +181,13 @@ fn winner<T: target>(dests: &[const option<T>],
 }
 
 fn propagate(b: state::grid, boundary_list: ~[boundary_element],
-             visited: ~[~[mut (bool, ~[state::move])]]) -> ~[boundary_element] {
+             visited: ~[~[mut (bool, ~[state::move])]], safe: bool)
+    -> ~[boundary_element]
+{
     let mut ret_list: ~[boundary_element] = ~[];
     for boundary_list.each() |end| {
         let (p, _) = end;
-        for get_passable_neighbors(p, b).each() |t| {
+        for get_passable_neighbors(p, b, safe).each() |t| {
             let (neighbor, m) = t;
             let (x, y) = neighbor;
             let (cond, _moves) = visited[y-1][x-1];
@@ -213,13 +205,26 @@ fn get_square(p: state::coord, b: state::grid) -> state::square {
 }
 
 fn get_passable_neighbors(p: state::coord,
-                       b: state::grid) -> ~[(state::coord, state::move)] {
+                          b: state::grid,
+                          safe: bool)
+    -> ~[(state::coord, state::move)]
+{
     vec::filter(get_neighbors(p), |t| {
         let (l, _) = t;
         alt get_square(l, b) {
-          state::empty | state::earth |
-          state::lambda { true }
-          _ { false}
+          state::empty | state::lambda | state::razor { true }
+          state::earth {
+            let upCoord = l.up();
+            if b.in(upCoord) {
+                alt get_square(upCoord, b) {
+                    state::rock { !safe }
+                    _ { true }
+                }
+            } else { true }
+          }
+          state::trampoline(fuck) { !safe }
+          state::target(fuck) { !safe /* rock might fall */ }
+          _ { false }
         }})
 }
 
@@ -237,7 +242,8 @@ fn test_a_path(state: state::state, src: state::coord,
                dests: ~[option<state::coord>], expected_len: uint) {
     import state::*;
     import vec::*;
-    let (p, _) = genpaths(state.grid, src, dests);
+    let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
+    let (p, _) = genpaths(state.grid,(6u,7u),~[some((6u,2u))], true);
     assert p.is_some();
     let tuple = option::get(p);
     alt tuple {

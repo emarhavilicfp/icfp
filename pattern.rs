@@ -2,6 +2,7 @@ import io::reader_util;
 
 import state::*;
 
+import task::{local_data_set,local_data_get};
 
 
 macro_rules! sqpt {
@@ -60,7 +61,7 @@ type pat = {
     off_r: uint, off_c: uint,
     off_r_dest: uint, off_c_dest: uint,
     cost: uint,
-    cmd: ~[const move]
+    cmd: ~[move]
 };
 
 fn match_offset(p: pat, g: grid, base: coord) -> bool {
@@ -118,7 +119,7 @@ fn read_patterns(filename: str) -> ~[@pat] {
         } else {
             str::shift_char(line);
             let meta = str::split_char(line, ' ');
-            let mut cmd = ~[];
+            let mut cmd : ~[move] = ~[];
             for meta[0].each_char() |c| { vec::push(cmd, move_from_char(c)); }
             let delta_r = vec::count(cmd, D) - vec::count(cmd, U);
             let delta_c = vec::count(cmd, R) - vec::count(cmd, L);
@@ -146,6 +147,19 @@ fn read_patterns(filename: str) -> ~[@pat] {
     ret rv;
 }
 
+
+fn get_patterns() -> ~[@pat] {
+    fn my_key(+_horrendous: @~[@pat]) { }
+    unsafe {
+    alt local_data_get(my_key) {
+        some(pats) {*pats}
+        none {
+            let pats = read_patterns("patterns/some_patterns");
+            local_data_set(my_key, @pats);
+            pats
+        }
+    }}
+}
 
 fn demo_pats(g: grid) {
     let pats = read_patterns("patterns/some_patterns");

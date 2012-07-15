@@ -162,15 +162,30 @@ impl extensions for grid {
         self.hash ^= self.keys.get(c, self.at(c));
     }
     
-    fn lambdas() -> ~[coord] {
-        self.foldl(
+    fn lambdas() -> ~[targets::gotoThing] {
+        fn makeTarget(sq: square, co: coord) -> targets::gotoThing {
+            alt sq {
+                lambda { ret targets::Lambda(co) }
+                razor { ret targets::Razor(co) }
+                lift_o { ret targets::OpenLift(co) }
+                _ { fail }
+            }
+        }
+        let mut dests = self.foldl(
             ~[],
-            fn @(l: ~[coord], sq: square, co: coord) -> ~[coord]
+            fn @(l: ~[targets::gotoThing], sq: square, co: coord) -> ~[targets::gotoThing]
             {
-                if sq == lambda || sq == lift_o{
-                    vec::append_one(l, co)
+                if sq == lambda || sq == lift_o || sq == razor {
+                    vec::append_one(l, makeTarget(sq, co))
                 } else { l }
-            })
+            });
+        let pats = pattern::get_patterns();
+        let matches = pattern::matched_pats(self, pats);
+        for matches.each() |pat|{
+            let (c,p) = pat;
+            vec::append_one(dests, targets::Pattern(c, *p));
+        }
+        dests
     }
 
     fn rehash() -> hash_val {

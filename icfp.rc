@@ -20,6 +20,8 @@ mod pattern;
 
 mod path;
 
+mod targets;
+
 mod evaluate;
 mod dlist;
 

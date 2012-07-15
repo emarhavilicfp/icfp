@@ -5,8 +5,9 @@ import path;
 import state;
 import state::extensions;
 import heuristics::*;
+import targets::gotoThing;
 
-import path::target;
+import targets::target;
 
 enum t {_dummy}
 impl of path_find for t {
@@ -22,7 +23,7 @@ impl of path_find for t {
 // TODO: Contain the game state by using a region pointer.
 type bblums_pathlist = {
     pathstate: (@mut option<brushfire>, @mut option<brushfire>),
-    targets: ~[mut option<state::coord>]
+    targets: ~[mut option<targets::gotoThing>]
 };
 
 fn mk() -> path_find {
@@ -68,10 +69,17 @@ pure fn map_mut<T, U>(v: &[T], f: fn(T) -> U) -> ~[mut U] {
 // Unsafety is defined as moves that cause side effects, such as
 // dislodging a boulder.
 fn path_easy(s: state::state, fire: @mut option<brushfire>,
-             targets: &[mut option<state::coord>]) -> option<path::path> {
+             targets: &[mut option<gotoThing>]) -> option<path::path> {
+    do_pathing(s,fire,targets, true)
+}
+
+fn do_pathing(s: state::state, fire: @mut option<brushfire>,
+              targets: &[mut option<gotoThing>], safe: bool)
+    -> option<path::path>
+{
     // Sets a slot in the targets list to 'none'
-    fn process_pathres(-x: option<(path::path,state::coord)>,
-                       targets: &[mut option<state::coord>])
+    fn process_pathres(-x: option<(path::path,targets::gotoThing)>,
+                       targets: &[mut option<gotoThing>])
             -> option<path::path> {
         if x.is_some() {
             let (path,target_found) = option::unwrap(x);
@@ -95,21 +103,22 @@ fn path_easy(s: state::state, fire: @mut option<brushfire>,
         let (shit1, shit2) = option::unwrap(shit);
         // Get path and new state
         let (pathres, stateres) =
-            path::genpath_restart(s.grid, s.robotpos, targets, shit1, shit2);
+            path::genpath_restart(s.grid, s.robotpos, targets, shit1, shit2, true);
         *fire = some(stateres);
         process_pathres(pathres, targets)
     } else {
-        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets);
+        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets, true);
         *fire = some(stateres);
         process_pathres(pathres, targets)
     }
 
 }
 
-fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>)
+fn path_aggressive(s: state::state, fire: @mut option<brushfire>,
+                   targets: &[mut option<gotoThing>])
     -> option<path::path>
 {
-    none
+    do_pathing(s, fire, targets, false)
 }
 
 /****************************************************************************
@@ -121,7 +130,7 @@ fn get_next_lambda(s: state::state, bblum: bblums_pathlist)
         -> option<(state::state,path::path)> {
     let (easy_state,aggr_state) = bblum.pathstate;;
     let mut easy = path_easy(s, easy_state, bblum.targets);
-    let mut aggressive = path_aggressive(s, aggr_state);
+    let mut aggressive = path_aggressive(s, aggr_state, bblum.targets);
 
     // Diamonds are forever.
     loop {
@@ -140,7 +149,7 @@ fn get_next_lambda(s: state::state, bblum: bblums_pathlist)
             if newstate.is_some() {
                 ret some((option::unwrap(newstate), try_path)); // Satisfied!
             } else {
-                aggressive = path_aggressive(s, aggr_state);
+                aggressive = path_aggressive(s, aggr_state, bblum.targets);
                 again;
             }
         } else {

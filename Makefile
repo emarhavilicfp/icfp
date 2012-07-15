@@ -7,9 +7,10 @@ C_OBJ = $(C_SRC:.c=.o)
 
 ICFP_SRC = icfp.rc \
 	   driver.rs \
+	   targets.rs \
 	   state.rs \
 	   path.rs \
-	   pattern.rs \
+       pattern.rs \
 	   evaluate.rs \
 	   dlist.rs \
 	   heuristics.rs \

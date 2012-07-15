@@ -40,5 +40,6 @@ mod game_tree {
 
 mod signal;
 
+mod targets;
 #[cfg(test)]
 mod sim_test;
