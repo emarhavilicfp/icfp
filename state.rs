@@ -641,13 +641,13 @@ impl extensions for state {
         }
 
         /* Helper function, so we can determine if rocks fall. */
-        let placerock = fn @( &grid_: grid, c: coord) {
+        let placerock = fn @( grid_: &grid, c: coord) {
             /* recall x_ and y_ at this point are where the robot has moved to */
             let (x, y) = c;
             if x == x_ && y == (y_ + 1) {
                 *rocks_fall = true;
             }
-            grid_.grid[y-1][x-1] = rock;
+            grid_.set((x, y), rock);
         };
 
         do grid.squares_i |sq, c| {
@@ -655,24 +655,24 @@ impl extensions for state {
           alt sq {
             rock {
               if grid.at((sx, sy-1)) == empty {
-                  placerock(grid_, (sx, sy-1));
+                  placerock(&grid_, (sx, sy-1));
                   grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == rock &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
-                  placerock(grid_, (sx+1, sy-1));
+                  placerock(&grid_, (sx+1, sy-1));
                   grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == rock &&
                         (grid.at((sx+1, sy)) != empty ||
                          grid.at((sx+1, sy-1)) != empty) &&
                         grid.at((sx-1, sy)) == empty &&
                         grid.at((sx-1, sy-1)) == empty {
-                  placerock(grid_, (sx-1, sy-1));
+                  placerock(&grid_, (sx-1, sy-1));
                   grid_.set((sx, sy), empty);
               } else if grid.at((sx, sy-1)) == lambda &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
-                  placerock(grid_, (sx+1, sy-1));
+                  placerock(&grid_, (sx+1, sy-1));
                   grid_.set((sx, sy), empty);
               }
             }
@@ -783,12 +783,20 @@ mod test {
     
     #[test]
     fn bouldering_problem() {
-        let s = "#####\n# R #\n# * #\n#   #\n#####\n";
+        let s = "#####\n\
+                 # R #\n\
+                 # * #\n\
+                 #   #\n\
+                 #####\n";
         let mut b = read_board(io::str_reader(s));
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        assert b.grid.to_str() == "#####\n\
+                                   # R #\n\
+                                   #   #\n\
+                                   # * #\n\
+                                   #####\n";
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
@@ -797,7 +805,6 @@ assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }
 
     #[test]
-    #[ignore]
     fn bouldering_problem_hashes() {
         let s = "#####\n# R #\n# * #\n#   #\n#####\n";
         let mut b = read_board(io::str_reader(s));
