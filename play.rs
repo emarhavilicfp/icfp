@@ -169,6 +169,7 @@ fn play_game(+s: state::state, verbose: bool)
 
 mod test {
     #[test]
+    #[ignore]
     fn test_play_game_check_hash() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
@@ -181,6 +182,7 @@ mod test {
         }
     }
     #[test]
+    #[ignore]
     fn test_zero_depth_equals_greedy() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
@@ -193,6 +195,7 @@ mod test {
         assert score == score3;
     }
     #[test]
+    #[ignore]
     fn test_one_bf_equals_greedy() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));

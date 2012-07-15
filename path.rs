@@ -177,9 +177,9 @@ fn winner<T: target>(dests: &[const option<T>],
         alt o {
           some(p) {
             let (x, y) = p.coord();
-            #error("%? %? %?", (visited.len(), visited[0].len()),
-                   (y - 1, x - 1),
-                   (y, x));
+            //#error("%? %? %?", (visited.len(), visited[0].len()),
+            //       (y - 1, x - 1),
+            //       (y, x));
             let (cond, _moves) = visited[y-1][x-1];
             if cond {
                 ret some(move!{p});
