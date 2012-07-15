@@ -247,3 +247,20 @@ fn test_genpath() {
       }
     }
 }
+
+//#[test]
+fn test_aggressive_pattern () {
+    import state::*;
+    import vec::*;
+    let state = state::read_board(
+        io::str_reader(#include_str("./maps/pattern_test.map")));
+    let (p, _) = genpaths(state.grid,(4u,3u),~[some((3u,3u))]);
+    assert p.is_some();
+    let tuple = option::get(p);
+    alt tuple {
+      (list, _) {
+        let len = list.len();
+        assert len == 8;
+      }
+    }
+}
