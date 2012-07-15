@@ -232,35 +232,51 @@ fn get_neighbors(p: state::coord) -> ~[(state::coord, state::move)] {
     }
 }
 
-#[test]
-fn test_genpath() {
+#[cfg(test)]
+fn test_a_path(state: state::state, src: state::coord,
+               dests: ~[option<state::coord>], expected_len: uint) {
     import state::*;
     import vec::*;
-    let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
-    let (p, _) = genpaths(state.grid,(6u,7u),~[some((6u,2u))]);
+    let (p, _) = genpaths(state.grid, src, dests);
     assert p.is_some();
     let tuple = option::get(p);
     alt tuple {
       (list, _) {
         let len = list.len();
-        assert len == 13;
+        assert len == expected_len;
       }
     }
 }
 
-//#[test]
+
+#[test]
+fn test_genpath() {
+    import state::state;
+    import state::read_board;
+    let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
+    test_a_path(state, (6u, 7u), ~[some((6u, 2u))], 13)
+}
+
+#[test]
+#[ignore]
 fn test_aggressive_pattern () {
-    import state::*;
-    import vec::*;
-    let state = state::read_board(
-        io::str_reader(#include_str("./maps/pattern_test.map")));
-    let (p, _) = genpaths(state.grid,(4u,3u),~[some((3u,3u))]);
-    assert p.is_some();
-    let tuple = option::get(p);
-    alt tuple {
-      (list, _) {
-        let len = list.len();
-        assert len == 8;
-      }
-    }
+    import state::state;
+    import state::read_board;
+    let state = state::read_board(io::str_reader(#include_str("./maps/pattern_test.map")));
+    test_a_path(state , (4u, 3u), ~[some((3u, 3u))], 8u)
+}
+
+#[test]
+#[ignore]
+fn test_trampoline () {
+    /* HEY YOU
+    Yeah, you, removing the #[ignore, listen the fuck up.
+    you need to figure out how in the devil the trampoline moves are being stored.
+    in particular, what the length of the resultant path will be. Then change that
+    999u to something sane.
+    */
+    import state::state;
+    import state::read_board;
+    let state = state::read_board(io::str_reader(#include_str("./maps/trampoline_test.map")));
+    test_a_path(state, (2u, 4u), ~[some((4u, 4u))], 999u)
 }
