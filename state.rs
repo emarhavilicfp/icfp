@@ -45,7 +45,6 @@ type state = {
     underwater: int, /* how long we have been underwater */
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
-    last_target: option<coord>, /* the last lambda we were known to be pursuing */
     score: int,
     /* We probably need a list of rocks here. */
 };
