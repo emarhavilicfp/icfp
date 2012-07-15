@@ -1,8 +1,6 @@
-CFLAGS=--static
-LDFLAGS=-lpthread -lrt -ldl
 MODE ?= dynamic
 
-all: bin/icfp bin/testseq
+all: bin/icfp bin/testseq icfptimed
 
 C_SRC = c_signal.c
 C_OBJ = $(C_SRC:.c=.o)
@@ -33,6 +31,10 @@ bin/testseq: $(ICFP_SRC) $(C_OBJ)
 	rustc testseq.rc -o ./bin/testseq
 
 else
+
+CFLAGS=--static
+LDFLAGS=-lpthread -lrt -ldl
+
 
 bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	rustc -c icfp.rc
