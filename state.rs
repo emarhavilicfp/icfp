@@ -17,13 +17,14 @@ enum square {
     target(int),
     beard(int),
     razor,
+    horock,
     empty,
     // If you add a square type, remember to update the number in
     // hash_keys and gen_hashkeys.
 }
 
 type hash_val = u32;
-type hash_keys = @~[~[[hash_val]/28]];
+type hash_keys = @~[~[[hash_val]/29]];
 
 type grid = {
     grid: ~[mut ~[mut square]],
@@ -95,7 +96,8 @@ impl extensions for square {
             target(i) { 9u }
             beard(i) { 10u } /* TODO: something smarter here */
             razor { 11u }
-            empty { 12u }
+            horock { 12u }
+            empty { 13u }
         }
     }
 }
@@ -181,7 +183,7 @@ impl extensions for grid {
 impl extensions for ~[mut ~[mut square]] {
     fn gen_hashkeys() -> hash_keys {
 
-        pure fn f() -> [hash_val]/28 unchecked {
+        pure fn f() -> [hash_val]/29 unchecked {
             // FIXME: it'd be nice if the rng were created outside
             let r = rand::rng();
             [
@@ -212,6 +214,7 @@ impl extensions for ~[mut ~[mut square]] {
                 r.gen_u32(), /* target  */
                 r.gen_u32(), /* beard  */
                 r.gen_u32(), /* razor  */
+                r.gen_u32(), /* horock  */
                 r.gen_u32(), /* empty  */
                 ]/_
         }
@@ -282,6 +285,7 @@ impl of to_str::to_str for square {
           target(i) { int::str(i) }
           beard(i) { "W" }
           razor { "!" }
+          horock { "@" }
           empty { " " }
         }
     }
@@ -325,6 +329,7 @@ fn square_from_char(c: char, g: int) -> square {
       '1' to '9' { target(c as int - '1' as int + 1) }
       'W'  { beard(g) }
       '!'  { razor }
+      '@'  { horock }
       ' '  { empty }
       _ {
         #error("invalid square: %?", c);
@@ -434,7 +439,7 @@ fn read_board(+in: io::reader) -> state {
                     some(_) { fail; }
                 }
             }
-            if sq == lambda {
+            if sq == lambda || sq == horock {
                 lambdasleft_ = lambdasleft_ + 1;
             }
             vec::push(row, sq);
@@ -539,7 +544,8 @@ impl extensions for state {
         };
 
         /* Is the move valid? */
-        let (x_, y_) = alt grid_.at((xp, yp)) {
+        let sq = grid_.at((xp, yp));
+        let (x_, y_) = alt sq {
           empty | earth | bot { /* We're good. */ (xp, yp) }
           lambda {
             lambdas_ = lambdas_ + 1;
@@ -550,17 +556,17 @@ impl extensions for state {
           lift_o { /* We've won -- ILHoist.hoist away! */
             ret endgame(score_ + self.lambdas * 50)
           }
-          rock {
+          rock | horock {
             if xp == x + 1 && yp == y &&
-               grid_.at((xp, yp)) == rock && grid_.at((x+2, y)) == empty {
-                grid_.set((x+2, yp), rock);
-                grid.set((x+2, yp), rock);
+               grid_.at((x+2, y)) == empty {
+                grid_.set((x+2, yp), sq);
+                grid.set((x+2, yp), sq);
                 (xp, yp)
             } else
             if xp == x - 1 && yp == y &&
-               grid_.at((xp, yp)) == rock && grid_.at((x-2, y)) == empty {
-                grid_.set((x-2, yp), rock);
-                grid.set((x-2, yp), rock);
+               grid_.at((x-2, y)) == empty {
+                grid_.set((x-2, yp), sq);
+                grid.set((x-2, yp), sq);
                 (xp, yp)
             } else {
                 if strict { ret oops }
@@ -640,40 +646,51 @@ impl extensions for state {
             }
         }
 
-        /* Helper function, so we can determine if rocks fall. */
-        let placerock = fn @( grid_: &grid, c: coord) {
-            /* recall x_ and y_ at this point are where the robot has moved to */
-            let (x, y) = c;
-            if x == x_ && y == (y_ + 1) {
-                *rocks_fall = true;
-            }
-            grid_.set((x, y), rock);
-        };
-
         do grid.squares_i |sq, c| {
           let (sx, sy) = c;
           alt sq {
-            rock {
+            rock | horock {
+              let isrock = |s: square| { s == rock || s == horock };
+              let mut c_ = c;
+
               if grid.at((sx, sy-1)) == empty {
-                  placerock(&grid_, (sx, sy-1));
-                  grid_.set((sx, sy), empty);
-              } else if grid.at((sx, sy-1)) == rock &&
+                  c_ = (sx, sy-1);
+              } else if isrock(grid.at((sx, sy-1))) &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
-                  placerock(&grid_, (sx+1, sy-1));
-                  grid_.set((sx, sy), empty);
-              } else if grid.at((sx, sy-1)) == rock &&
+                  c_ = (sx+1, sy-1);
+              } else if isrock(grid.at((sx, sy-1))) &&
                         (grid.at((sx+1, sy)) != empty ||
                          grid.at((sx+1, sy-1)) != empty) &&
                         grid.at((sx-1, sy)) == empty &&
                         grid.at((sx-1, sy-1)) == empty {
-                  placerock(&grid_, (sx-1, sy-1));
-                  grid_.set((sx, sy), empty);
+                  c_ = (sx-1, sy-1);
               } else if grid.at((sx, sy-1)) == lambda &&
                         grid.at((sx+1, sy)) == empty &&
                         grid.at((sx+1, sy-1)) == empty {
-                  placerock(&grid_, (sx+1, sy-1));
-                  grid_.set((sx, sy), empty);
+                  c_ = (sx+1, sy-1);
+              }
+
+              if c != c_ {
+                  grid_.set(c, empty);
+
+
+                  /* Determine if rocks fall. */
+                  /* recall x_ and y_ at this point are where the robot has moved to */
+                  let (x, y) = c_;
+                  if x == x_ && y == (y_ + 1) {
+                      *rocks_fall = true;
+                  }
+
+                  alt sq {
+                    rock { grid_.set(c_, rock) }
+                    horock {
+                      if grid.at((x, y-1)) != empty
+                           { grid_.set(c_, lambda) }
+                      else { grid_.set(c_, horock) }
+                    }
+                    _ { fail "sq should have been rock or horock" }
+                  }
               }
             }
             lift_c {
