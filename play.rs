@@ -2,7 +2,7 @@
 
 import path;
 import state;
-import state::extensions;
+import state::*;
 import heuristics::*;
 import dvec;
 import dvec::extensions;
@@ -115,13 +115,13 @@ fn greedy_finish(-s: state::state, verbose: bool)
         -> (dvec::dvec<state::move>, state::state) {
     // Attempt to do something next.
     let result = get_next_lambda(s);
-    if verbose {
-        io::println("Pursuing");
-    }
-
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
         // Find what to do next.
+        if verbose {
+            io::println("Pursuing path of " + str::concat(vec::map(path, |i| { i.to_str() })));
+        }
+
         let (finishing_moves,endstate) = greedy_finish(newstate, verbose);
         // Do this stuff before.
         for path_for_each(path) |the_move| {
