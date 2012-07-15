@@ -43,6 +43,7 @@ fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
     }
 }
 
+/// This finds paths that don't require traversing any unsafe things.
 fn path_easy(s: state::state, fire: @mut option<brushfire>)
         -> option<path::path> {
     let lambdas = s.grid.lambdas();
@@ -62,6 +63,9 @@ fn path_easy(s: state::state, fire: @mut option<brushfire>)
     }
 
 }
+
+/// Attempts to find paths, possibly using dangerous moves. We
+/// traverse dangeroues moves by patterns.
 fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>)
         -> option<path::path> { none }
 
