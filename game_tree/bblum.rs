@@ -178,7 +178,6 @@ fn mk(o: search_opts) -> game_tree {
 
 mod test {
     #[test]
-    #[ignore]
     fn test_play_game_check_hash() {
         let s = #include_str("../maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
@@ -193,7 +192,6 @@ mod test {
         }
     }
     #[test]
-    #[ignore]
     fn test_zero_depth_equals_greedy() {
         let s = #include_str("../maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
@@ -206,7 +204,6 @@ mod test {
         assert score == score3;
     }
     #[test]
-    #[ignore]
     fn test_one_bf_equals_greedy() {
         let s = #include_str("../maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
@@ -234,7 +231,6 @@ mod test {
         assert score2 > score;
     }
     #[test]
-    #[ignore] // Passes as of this commit. Might break in the future.
     fn test_search_beats_greedy() {
         // 5 seems to be the min branch depth. Guess we find it on the 5th
         // closest lambda.

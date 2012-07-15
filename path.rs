@@ -97,7 +97,6 @@ fn genpaths<T: copy target>(b: state::grid, src: state::coord,
 
 }
 
-
 fn genpath_restart<T: copy target>
     (b: state::grid, src: state::coord,
      dests: &[const option<T>],
@@ -119,12 +118,12 @@ fn genpath_restart<T: copy target>
         }
     }
     alt copy condition {
-      some(p) { ret (some((build_path(p, visited), p)), (visited, boundary)); }
+      some(i) { ret (some((build_path(option::get(dests[i]), visited), option::get(dests[i]))), (visited, boundary)); }
       none {fail}
     }
 }
 
-fn build_path<T: target>(p: T,
+fn build_path<T: target>(+p: T,
                          visited: ~[~[mut (bool, ~[state::move])]]) -> path {
     //TODO(tony): handle trampolines.
     let (x, y) = p.coord();
@@ -171,9 +170,9 @@ fn build_path_backwards(p: state::coord,
 
 fn winner<T: target>(dests: &[const option<T>],
           visited: ~[~[mut (bool, ~[state::move] )]])
-    -> option<T>
+    -> option<uint>
 {
-    for dests.each() |o| {
+    for dests.eachi() |i, o| {
         alt o {
           some(p) {
             let (x, y) = p.coord();
@@ -182,7 +181,7 @@ fn winner<T: target>(dests: &[const option<T>],
             //       (y, x));
             let (cond, _moves) = visited[y-1][x-1];
             if cond {
-                ret some(move!{p});
+                ret some(i);
             }
           }
           none { again; }
