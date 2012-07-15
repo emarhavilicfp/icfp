@@ -103,8 +103,12 @@ fn path_easy(s: state::state, fire: @mut option<brushfire>,
     }
 
 }
+
 fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>)
-        -> option<path::path> { none }
+    -> option<path::path>
+{
+    none
+}
 
 /****************************************************************************
  * Code

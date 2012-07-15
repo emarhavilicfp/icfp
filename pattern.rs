@@ -87,7 +87,7 @@ fn match_show(p: pat, g: grid, base: coord) {
         io::println("");
     }
 }
-fn read_patterns(filename: str) -> ~[pat] {
+fn read_patterns(filename: str) -> ~[@pat] {
     let in: io::reader = io::file_reader(filename).get();
 
     // this is so not Unicode-aware
@@ -124,18 +124,18 @@ fn read_patterns(filename: str) -> ~[pat] {
             let delta_c = vec::count(cmd, R) - vec::count(cmd, L);
 
             vec::push(rv,
-                      {p: p_pat, off_r: o_r, off_c: o_c,
-                       off_r_dest: o_r + delta_r, off_c_dest: o_c + delta_c,
-                       cost: meta[1].len(), //worse is better
-                       cmd: cmd});
+                      @{p: p_pat, off_r: o_r, off_c: o_c,
+                        off_r_dest: o_r + delta_r, off_c_dest: o_c + delta_c,
+                        cost: meta[1].len(), //worse is better
+                        cmd: cmd});
 
             if *flip_ok {
-                vec::push(rv, {p: flip_p_pat, off_r: o_r,
-                               off_c: (p_pat[0u].len()-1u)-o_c,
-                               off_r_dest: o_r + delta_r,
-                               off_c_dest: o_c - delta_c,
-                               cost: meta[1].len(), //worse: still better
-                               cmd: do cmd.map |m| {m.flip()}} );
+                vec::push(rv, @{p: flip_p_pat, off_r: o_r,
+                                off_c: (p_pat[0u].len()-1u)-o_c,
+                                off_r_dest: o_r + delta_r,
+                                off_c_dest: o_c - delta_c,
+                                cost: meta[1].len(), //worse: still better
+                                cmd: do cmd.map |m| {m.flip()}} );
             }
 
             p_pat = ~[];
@@ -152,12 +152,26 @@ fn demo_pats(g: grid) {
 
     do pats.eachi() |_i, pat| {
         do g.squares_i() |_sq, coord| {
-            if match_offset(pat, g, coord) {
-                match_show(pat, g, coord);
+            if match_offset(*pat, g, coord) {
+                match_show(*pat, g, coord);
                 io::println("--------");
             }
         };
         true
     };
 
+}
+
+fn matched_pats(g: grid, pats: &[@pat]) -> ~[(coord, @pat)] {
+    let mut found = ~[];
+
+    for pats.eachi() |_i, pat| {
+        do g.squares_i() |_sq, coord| {
+            if match_offset(*pat, g, coord) {
+                vec::push(found, (coord, pat));
+            }
+        }
+    }
+
+    found
 }
