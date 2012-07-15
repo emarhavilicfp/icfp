@@ -6,7 +6,6 @@ import state::*;
 import heuristics::*;
 import dvec;
 import dvec::extensions;
-import signal;
 
 // BUG: add this to libstd::util
 // pure fn rational_mul(x: rational, y: rational) -> rational {
@@ -127,28 +126,19 @@ fn add_path_prefix(finishing_moves: dvec::dvec<state::move>, p: path::path) {
     }
 }
 
-type search_opts = {
-    branch_factor: uint, verbose: bool, killable: bool, max_depth: uint
-};
+type search_opts = { branch_factor: uint, verbose: bool };
 fn default_opts() -> search_opts {
-    { branch_factor: 1, verbose: false,
-      killable: true,   max_depth: uint::max_value }
+    { branch_factor: 1, verbose: false }
 }
 fn default_opts_verbose(verbose: bool) -> search_opts {
-    { verbose: verbose with default_opts() }
+    { branch_factor: 1, verbose: verbose }
 }
 fn default_opts_bfac(bf: uint) -> search_opts {
-    { branch_factor: bf with default_opts() }
+    { branch_factor: bf, verbose: false }
 }
 
 // Repeatedly finds lambdas (hopefully).
-// TODO: bblum: add a 'int how_hungry' param; -1 for play until end.
 fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
-    // Test for time run out. TODO: Maybe check if it's save to finish greedy
-    if signal::signal_received() && o.killable {
-        let score = s.score;
-        ret (dvec::from_elem(state::A), s, score);
-    }
     // Attempt to do something next.
     let result = get_next_lambda_oneshot(s);
     if result.is_some() {
@@ -173,11 +163,6 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     let mut best = none;
     let mut best_score = none; // Redundant. To avoid unwrapping 'best'.
     let path_state = initial_path_state();
-    // Test for time run out.
-    if signal::signal_received() && o.killable {
-        let score = s.score;
-        ret (dvec::from_elem(state::A), s, score);
-    }
     // Test for horizon node.
     if depth == 0 {
         ret greedy_finish(s, o);
@@ -218,38 +203,10 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     }
 }
 
-#[always_inline]
-fn score_result(r: search_result) -> int { alt r { (_,_,s) { s } } }
-
-fn iterative_search(-s: state::state, o: search_opts) -> search_result {
-    let mut depth = 1;
-    let mut best_result = greedy_finish(copy s, { killable: false with o });
-    // Loop until (A) Reach maximum specified depth, (B) signalled
-    while depth <= o.max_depth && !(signal::signal_received() && o.killable) {
-        #error["SEARCH: Searching depth %u; best so far %d",
-             depth, score_result(best_result)];
-        // Search.
-        let result = search(copy s, depth, o);
-        // Interpret findings.
-        if (score_result(result) > score_result(best_result)) {
-            #error["SEARCH: Found new best %d", score_result(result)];
-            best_result = result;
-        } else if (score_result(result) == score_result(best_result)) {
-            #error["SEARCH: Nothing new"];
-        } else {
-            #error["SEARCH: Worse..?"];
-        }
-        depth += 1;
-    }
-    best_result
-}
-
 fn play_game(+s: state::state, verbose: bool)
         -> (~[mut state::move], state::state) {
-    let o = { max_depth: 10, branch_factor: branch_factor()
-              with default_opts_verbose(verbose) };
-    let (moves_rev, endstate, _score) = iterative_search(s, o);
-        // greedy_finish(s, default_opts_verbose(verbose));
+    let (moves_rev, endstate, _score) =
+        greedy_finish(s, default_opts_verbose(verbose));
     let moves = dvec::unwrap(moves_rev);
     vec::reverse(moves);
     (moves,endstate)
