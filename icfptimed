@@ -1,0 +1,5 @@
+#!/bin/sh
+./icfp $@ &
+pid = $!
+sleep 150 && kill $pid
+sleep 10 && kill -9 $pid
