@@ -71,21 +71,21 @@ fn get_best_top_option(opts: settings, +s: state::state, depth: uint) -> option<
     vec::push(paththunks, opts.path_find.get_paths(s));
     vec::push(fullpath, ~[]);
     
-    while paththunks.len() != 0 {
+    while paththunks.len() != 0 && !signal::signal_received() {
         /* Pull on the thunk. */
         alt paththunks[paththunks.len() - 1]() {
           none {
-            /* Pop one level up. */
+            /* I'm sorry, did I break your concentration? ... Oh, you were finished?  Well, allow me to retort. */
             vec::pop(paththunks);
             vec::pop(fullpath);
           }
           some((news, path)) {
-            if paththunks.len() < depth { /* Oh, you were finished?  Well, allow me to retort. */
+            if paththunks.len() < depth { /* Say what again. */
                 vec::push(fullpath, path);
                 vec::push(paththunks, opts.path_find.get_paths(news)); 
             }
             
-            if news.score > bestscore {
+            if news.score > bestscore { /* Then you know what I'm sayin'! */
                 bestpath = fullpath;
                 bestscore = news.score;
             }
