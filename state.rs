@@ -251,7 +251,7 @@ fn move_from_char(c: char) -> move {
     alt c {
         'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A } 's' {S}
         'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A } 'S' {S}
-        _ { fail #fmt("move_from_char: %d?", c as int) /* XXX do something more reasonable here */ }
+        _ { #error("move_from_char: %d? - assuming wait", c as int); W }
     }
 }
 
@@ -334,8 +334,7 @@ fn square_from_char(c: char, g: int) -> square {
       '@'  { horock }
       ' '  { empty }
       _ {
-        #error("invalid square: %?", c);
-        fail
+        #error("invalid square: %? -- assuming empty", c); empty
       }
     }
 }
@@ -423,7 +422,7 @@ fn read_board(+in: io::reader) -> state {
             }
             "Growth" { growth = int::from_str(split[1]).get() }
             "Razors" { razors = int::from_str(split[1]).get() }
-            _ { fail "Bad metadata in map file"; }
+            _ { #error["Bad metadata in map file; ignoring"]; }
         }
     }
 
@@ -438,7 +437,7 @@ fn read_board(+in: io::reader) -> state {
             if sq == bot {
                 alt (robot) {
                     none { robot = some ((x, yinv)); }
-                    some(_) { fail; }
+                    some(_) { #error["Robot already exists; ignoring"]; }
                 }
             }
             if sq == lambda || sq == horock {
