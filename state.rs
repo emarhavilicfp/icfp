@@ -29,6 +29,30 @@ type grid = {
     keys: hash_keys,
 };
 type coord = (uint,uint); /* Always in *world* (1-based) coordinates -- (x,y)! */
+
+impl extensions for coord {
+    fn +(c: coord) -> coord {
+        let (x, y) = self;
+        let (xx, yy) = c;
+        (x + xx, y + yy)
+    }
+
+    fn x() -> uint {
+        let (x, _) = self;
+        x
+    }
+
+    fn y() -> uint {
+        let (_, y) = self;
+        y
+    }
+
+    fn left() -> coord  { self + (-1,  0) }
+    fn right() -> coord { self + ( 1,  0) }
+    fn up() -> coord    { self + ( 0,  1) }
+    fn down() -> coord  { self + ( 0, -1) }
+}
+
 type state = {
     /* Intrinsics */
     flooding: int,
