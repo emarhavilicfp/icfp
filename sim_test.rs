@@ -97,7 +97,7 @@ fn boulder4() {
 
 #[test]
 #[ignore]
-fn boulder5() {
+fn beard1() {
     test_step!{
         "#####\n\
          # R #\n\
@@ -117,3 +117,24 @@ fn boulder5() {
     }
 }
 
+#[test]
+#[ignore]
+fn tramp1() {
+    test_step!{
+        "#####\n\
+         #AR #\n\
+         #   #\n\
+         #   #\n\
+         #  1#\n\
+         #####\n\
+              \n\
+         Growth 1\n",
+        L,
+        "#####\n\
+         #   #\n\
+         #   #\n\
+         #   #\n\
+         #  R#\n\
+         #####\n"
+    }
+}
