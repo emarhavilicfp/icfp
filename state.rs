@@ -79,11 +79,6 @@ impl extensions for hash_keys {
 }
 
 impl extensions for grid {
-    // FIXME: using this is not cheap.
-    pure fn [](i: uint) -> ~[mut square] {
-        self.grid[i]
-    }
-
     fn squares(f: fn(square)) {
         let self = &self.grid;
         for self.each |row| {
@@ -329,20 +324,20 @@ fn fallable(g: grid, r: uint, c: uint) -> bool {
 
 // Is it safe to move into this tile next turn?
 fn safe(g: grid, r: uint, c: uint) -> bool {
-    if r == 0 || c == 0 || c == g[0u].len() - 1u {
+    if r == 0 || c == 0 || c == g.grid[0u].len() - 1u {
         true
     } else {
         // Die from above
-        !((g[r+2][c] == rock && g[r+1][c] == empty)
+        !((g.grid[r+2][c] == rock && g.grid[r+1][c] == empty)
         // Die from left boulder falling right
-          || (g[r+2][c-1] == rock && right_fallable(g, r+1, c-1))
+          || (g.grid[r+2][c-1] == rock && right_fallable(g, r+1, c-1))
         // Die from right boulder falling left
-          || (g[r+2][c+1] == rock && left_fallable(g, r+1, c+1)))
+          || (g.grid[r+2][c+1] == rock && left_fallable(g, r+1, c+1)))
     }
 }
 
 fn safely_passable(g: grid, r: uint, c: uint) -> bool {
-    alt g[r][c] {
+    alt g.grid[r][c] {
       rock | wall | lift_c { false }
       _ { safe(g,r,c) }
     }
@@ -579,7 +574,7 @@ impl extensions for state {
             if x == x_ && y == (y_ + 1) {
                 *rocks_fall = true;
             }
-            grid_[y-1][x-1] = rock;
+            grid_.grid[y-1][x-1] = rock;
         };
 
         do grid.squares_i |sq, c| {
@@ -700,14 +695,16 @@ mod test {
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
-        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        
+assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }
 
     #[test]
+    #[ignore]
     fn bouldering_problem_hashes() {
         let s = "#####\n# R #\n# * #\n#   #\n#####\n";
         let mut b = read_board(io::str_reader(s));
@@ -716,11 +713,11 @@ mod test {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
         assert b.hash() == b.rehash();
-        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
         b = alt b.step(W, false) {
             stepped(b) { extract_step_result(b) } _ { fail }
         };
         assert b.hash() == b.rehash();
-        //assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
+        assert b.grid.to_str() == "#####\n# R #\n#   #\n# * #\n#####\n";
     }    
 }

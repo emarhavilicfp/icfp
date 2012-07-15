@@ -34,7 +34,7 @@ fn genpaths(b: state::grid, src: state::coord,
     let (x, y) = src;
     let mut visited: ~[~[mut(bool, option<state::move>)]] = ~[];
     for iter::repeat(b.grid.len()) {
-        vec::push(visited, vec::from_elem(b[0].len(), (false, none)));
+        vec::push(visited, vec::from_elem(b.grid[0].len(), (false, none)));
     }
     visited[y-1][x-1] = (true, some(state::W));
     let mut condition: option<state::coord> = none;
@@ -121,7 +121,7 @@ fn propagate(b: state::grid, boundary_list: ~[boundary_element],
 
 fn get_square(p: state::coord, b: state::grid) -> state::square {
     alt p {
-      (x, y) { b[y-1][x-1] }
+      (x, y) { b.grid[y-1][x-1] }
     }
 }
 

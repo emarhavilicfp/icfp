@@ -47,8 +47,8 @@ fn rand_grid(r: rand::rng, m: uint, n: uint)
         lift_y = r.gen_uint_range(1u, n - 1u);
     }
 
-    grid[bot_x][bot_y] = state::bot;
-    grid[lift_x][lift_y] = state::lift_c;
+    grid.grid[bot_x][bot_y] = state::bot;
+    grid.grid[lift_x][lift_y] = state::lift_c;
 
     (grid, (bot_x + 1, bot_y + 1)) // NIH MAGIC
 }
