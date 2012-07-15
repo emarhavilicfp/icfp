@@ -23,6 +23,8 @@ enum square {
     // hash_keys and gen_hashkeys.
 }
 
+const lambda_score: int = 25;
+
 type hash_val = u32;
 type hash_keys = @~[~[[hash_val]/29]];
 
@@ -539,7 +541,7 @@ impl extensions for state {
           W { (x, y) }
           S { (x, y) }
           A { /* Abort!  Abort! */
-            ret endgame(score_ + self.lambdas * 25)
+            ret endgame(score_ + self.lambdas * lambda_score)
           }
         };
 
@@ -550,7 +552,7 @@ impl extensions for state {
           lambda {
             lambdas_ = lambdas_ + 1;
             lambdasleft_ = lambdasleft_ - 1;
-            score_ = score_ + 25;
+            score_ = score_ + lambda_score;
             (xp, yp)
           }
           lift_o { /* We've won -- ILHoist.hoist away! */
