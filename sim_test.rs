@@ -96,7 +96,6 @@ fn boulder4() {
 }
 
 #[test]
-#[ignore]
 fn beard1() {
     test_step!{
         "#####\n\
@@ -118,7 +117,6 @@ fn beard1() {
 }
 
 #[test]
-#[ignore]
 fn tramp1() {
     test_step!{
         "#####\n\
@@ -128,7 +126,7 @@ fn tramp1() {
          #  1#\n\
          #####\n\
               \n\
-         Growth 1\n",
+         Trampoline A targets 1\n",
         L,
         "#####\n\
          #   #\n\

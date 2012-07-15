@@ -683,8 +683,7 @@ impl extensions for state {
             }
             beard(g) {
                 let mut newg = g - 1;
-                if newg == 0 {
-                    newg = self.growth - 1;
+                if newg == -1 {
                     for uint::range(sx-1, sx+2) |x__| {
                         for uint::range(sy-1, sy+2) |y__| {
                             let c = (x__, y__);
