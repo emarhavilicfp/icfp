@@ -120,9 +120,7 @@ fn propagate(b: state::grid, boundary_list: ~[boundary_element],
 }
 
 fn get_square(p: state::coord, b: state::grid) -> state::square {
-    alt p {
-      (x, y) { b.grid[y-1][x-1] }
-    }
+    b.at(p)
 }
 
 fn get_empty_neighbors(p: state::coord,
