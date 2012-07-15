@@ -20,9 +20,6 @@ mod pattern;
 
 mod path;
 
-// not used yet, this is just to make sure it builds.
-mod path_updated;
-
 mod evaluate;
 mod dlist;
 
