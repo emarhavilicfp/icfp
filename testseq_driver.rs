@@ -36,7 +36,7 @@ fn main(args: ~[str]) {
         alt state.step(move, false) {
           state::stepped(s) { state = state::extract_step_result(s); }
           state::endgame(points) {
-            io::println(#fmt("%d", points));
+            io::print(#fmt("%d", points));
           }
           _ { fail }
         }
