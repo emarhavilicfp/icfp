@@ -6,6 +6,8 @@ import state;
 import state::extensions;
 import heuristics::*;
 
+import path::target;
+
 // A lazy list of movelists.
 trait pathlist {
     // Should always be the same state. Needs knowledge of region ptrs to fix.

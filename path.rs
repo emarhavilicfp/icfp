@@ -1,7 +1,9 @@
 // Path generation.
 
+import either::{either, left, right};
+
 import state;
-import state::extensions;
+import state::{extensions, coord};
 import dvec;
 import vec;
 import vec::extensions;
@@ -11,12 +13,63 @@ type boundary_element = (state::coord, ~[state::move]);
 type path_state = (~[~[mut (bool, ~[state::move])]], ~[boundary_element]);
 type path = ~[state::move];
 
+macro_rules! move {
+    { $x:expr } => { unsafe { let y <- *ptr::addr_of($x); y } }
+}
+
+/// A thing that the pathfinder will try to route through.
+trait target {
+    /// Where is this target?
+    pure fn coord() -> coord;
+
+    /// How valuable is this target?
+    ///
+    /// Can be negative if it costs you something to go here. An
+    /// example is in patterns.
+    fn score() -> int;
+
+    /// Call this when you get to this target.
+    ///
+    /// Targets like lambdas don't move you, but some do. Examples are
+    /// traversing patterns or trampolines.
+    pure fn traverse() -> (coord, path);
+}
+
+/// This is lambda-only implementation of target.
+impl of target for state::coord {
+    pure fn coord() -> coord { self }
+    fn score() -> int { 25 }
+    pure fn traverse() -> (coord, path) { (self, ~[]) }
+}
+
+/// How to combine targets
+impl<L: target, R: target> of target for either<L, R> {
+    pure fn coord() -> coord {
+        alt self {
+          left(x) { x.coord() }
+          right(x) { x.coord() }
+        }
+    }
+
+    fn score() -> int {
+        alt self {
+          left(x) { x.score() }
+          right(x) { x.score() }
+        }
+    }
+
+    pure fn traverse() -> (coord, path) {
+        alt self {
+          left(x) { x.traverse() }
+          right(x) { x.traverse() }
+        }
+    }
+}
 
 
 
-fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
-    // TODO One copy left. Even Ben couldn't figure out how to get rid of it.
-    let mut st_ = copy st;
+fn apply(p: path, +st: state::state, strict: bool) -> state::step_result {
+    let mut st_ <- st;
     for p.each |the_move| {
             alt st_.step(the_move, strict) {
               state::stepped(st__) {
@@ -29,9 +82,9 @@ fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
     ret state::stepped(@mut some(st_));
 }
 
-fn genpaths(b: state::grid, src: state::coord, 
-             dests: &[const option<state::coord>]) 
-             -> (option<(path,state::coord)>, path_state) {
+fn genpaths<T: copy target>(b: state::grid, src: state::coord, 
+             dests: &[const option<T>]) 
+             -> (option<(path, T)>, path_state) {
     let (x, y) = src;
     let mut visited: ~[~[mut(bool, ~[state::move])]] = ~[];
     for iter::repeat(b.grid.len()) {
@@ -45,16 +98,18 @@ fn genpaths(b: state::grid, src: state::coord,
 }
 
 
-fn genpath_restart(b: state::grid, src: state::coord,
-                   dests: &[const option<state::coord>],
-                   +v: ~[~[mut (bool, ~[state::move])]],
-                   bound: ~[boundary_element]) 
-                   -> (option<(path, state::coord)>, path_state) {
+fn genpath_restart<T: copy target>
+    (b: state::grid, src: state::coord,
+     dests: &[const option<T>],
+     +v: ~[~[mut (bool, ~[state::move])]],
+     bound: ~[boundary_element]) 
+    -> (option<(path, T)>, path_state)
+{
     let mut visited = v;
     let mut boundary = bound;
     let (x, y) = src;
     visited[y-1][x-1] = (true, ~[state::W]);
-    let mut condition: option<state::coord> = none;
+    let mut condition = none;
     while condition == none {
         boundary = propagate(b, boundary, visited);
         condition = winner(dests, visited);
@@ -69,10 +124,10 @@ fn genpath_restart(b: state::grid, src: state::coord,
     }
 }
 
-fn build_path(p: state::coord,
-              visited: ~[~[mut (bool, ~[state::move])]]) -> path {
+fn build_path<T: target>(p: T,
+                         visited: ~[~[mut (bool, ~[state::move])]]) -> path {
     //TODO(tony): handle trampolines.
-    let (x, y) = p;
+    let (x, y) = p.coord();
     alt visited[y-1][x-1] {
       (false, _) {fail}
       (_, l) {
@@ -114,15 +169,20 @@ fn build_path_backwards(p: state::coord,
     vec::map(build_path(p, visited), invert_move)
 }
 
-fn winner(dests: &[const option<state::coord>],
-          visited: ~[~[mut (bool, ~[state::move] )]]) -> option<state::coord> {
+fn winner<T: target>(dests: &[const option<T>],
+          visited: ~[~[mut (bool, ~[state::move] )]])
+    -> option<T>
+{
     for dests.each() |o| {
         alt o {
           some(p) {
-            let (x, y) = p;
+            let (x, y) = p.coord();
+            #error("%? %? %?", (visited.len(), visited[0].len()),
+                   (y - 1, x - 1),
+                   (y, x));
             let (cond, _moves) = visited[y-1][x-1];
             if cond {
-                ret some(p);
+                ret some(move!{p});
             }
           }
           none { again; }
@@ -178,7 +238,7 @@ fn test_genpath() {
     import state::*;
     import vec::*;
     let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
-    let (p, _) = genpaths(state.grid,(6,7),~[some((6,2))]);
+    let (p, _) = genpaths(state.grid,(6u,7u),~[some((6u,2u))]);
     assert p.is_some();
     let tuple = option::get(p);
     alt tuple {
