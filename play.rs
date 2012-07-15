@@ -29,6 +29,8 @@ fn reach<T>(v: &[const T], blk: fn(T) -> bool) {
  * Glue
  ****************************************************************************/
 
+// We use the Brushfire algorithm. Here is a webpage that mentions it:
+// http://andrewferguson.net/2009/04/06/a-short-guide-to-robot-path-planning/
 type brushfire = path::path_state;
 
 fn path_len(p: path::path) -> uint { vec::len(p) }
@@ -44,6 +46,9 @@ fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
 }
 
 /// This finds paths that don't require traversing any unsafe things.
+///
+/// Unsafety is defined as moves that cause side effects, such as
+/// dislodging a boulder.
 fn path_easy(s: state::state, fire: @mut option<brushfire>)
         -> option<path::path> {
     let lambdas = s.grid.lambdas();

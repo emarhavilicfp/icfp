@@ -1,7 +1,7 @@
 // Path generation.
 
 import state;
-import state::extensions;
+import state::{coord, extensions};
 import dvec;
 import vec;
 import vec::extensions;
@@ -11,7 +11,23 @@ type boundary_element = (state::coord, state::move);
 type path_state = (~[~[mut (bool, option<state::move>)]], ~[boundary_element]);
 type path = ~[state::move];
 
+/// A thing that the pathfinder will try to route through.
+trait target {
+    /// Where is this target?
+    fn coord() -> coord;
 
+    /// How valuable is this target?
+    ///
+    /// Can be negative if it costs you something to go here. An
+    /// example is in patterns.
+    fn score() -> int;
+
+    /// Call this when you get to this target.
+    ///
+    /// Targets like lambdas don't move you, but some do. Examples are
+    /// traversing patterns or trampolines.
+    fn traverse() -> (coord, path);
+}
 
 
 fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
