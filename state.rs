@@ -42,6 +42,17 @@ impl extensions for coord {
         (x + xx, y + yy)
     }
 
+    fn move(m: move) -> coord {
+        let (x, y) = self;
+        alt m {
+            U { (x, y + 1) }
+            D { (x, y - 1) }
+            L { (x - 1, y) }
+            R { (x + 1, y) }
+            _ { (x, y) }
+        }
+    }
+
     fn x() -> uint {
         let (x, _) = self;
         x
@@ -147,6 +158,23 @@ impl extensions for grid {
     fn at(c: coord) -> square {
         let (x, y) = c;
         self.grid[y-1][x-1]
+    }
+
+    fn neighbors_of(c: coord, blk: fn (coord, move) -> bool) {
+        let moves = ~[R, D, L, U];
+
+        for moves.each |m| {
+            let (x, y) = c.move(m);
+            if (y < 1 || y >= self.grid.len()) {
+                again;
+            }
+            if (x < 1 || x >= self.grid[0].len()) {
+                again;
+            }
+            if (!blk((x,y), m)) {
+                break;
+            }
+        }
     }
 
     fn in(c: coord) -> bool {
