@@ -1,33 +1,17 @@
 // Path generation.
 
 import state;
-import state::{coord, extensions};
+import state::extensions;
 import dvec;
 import vec;
 import vec::extensions;
 
 
-type boundary_element = (state::coord, state::move);
-type path_state = (~[~[mut (bool, option<state::move>)]], ~[boundary_element]);
+type boundary_element = (state::coord, ~[state::move]);
+type path_state = (~[~[mut (bool, ~[state::move])]], ~[boundary_element]);
 type path = ~[state::move];
 
-/// A thing that the pathfinder will try to route through.
-trait target {
-    /// Where is this target?
-    fn coord() -> coord;
 
-    /// How valuable is this target?
-    ///
-    /// Can be negative if it costs you something to go here. An
-    /// example is in patterns.
-    fn score() -> int;
-
-    /// Call this when you get to this target.
-    ///
-    /// Targets like lambdas don't move you, but some do. Examples are
-    /// traversing patterns or trampolines.
-    fn traverse() -> (coord, path);
-}
 
 
 fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
@@ -45,37 +29,31 @@ fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
     ret state::stepped(@mut some(st_));
 }
 
-fn genpaths(b: state::grid, src: state::coord,
-            dests: ~[state::coord]) -> (option<path>, path_state) {
+fn genpaths(b: state::grid, src: state::coord, 
+             dests: &[const option<state::coord>]) 
+             -> (option<(path,state::coord)>, path_state) {
     let (x, y) = src;
-    let mut visited: ~[~[mut(bool, option<state::move>)]] = ~[];
+    let mut visited: ~[~[mut(bool, ~[state::move])]] = ~[];
     for iter::repeat(b.grid.len()) {
-        vec::push(visited, vec::from_elem(b.grid[0].len(), (false, none)));
+        vec::push(visited, vec::from_elem(b.grid[0].len(), (false, ~[])));
     }
-    visited[y-1][x-1] = (true, some(state::W));
-    let mut condition: option<state::coord> = none;
-    let mut boundary = ~[(src, state::W)];
-    while condition == none {
-        boundary = propagate(b, boundary, visited);
-        condition = winner(dests, visited);
-        if (boundary.len() == 0) {
-            //shit's fucked (no reachable)
-            ret (none, (visited, boundary));
-        }
-    }
-    alt copy condition {
-      some(p) { ret (some(build_path(p, visited)), (visited, boundary)); }
-      none {fail}
-    }
+    visited[y-1][x-1] = (true, ~[state::W]);
+    //let mut condition: option<state::coord> = none;
+    let mut boundary = ~[(src, ~[state::W])];
+    genpath_restart(b, src, dests, visited, boundary)
+
 }
 
+
 fn genpath_restart(b: state::grid, src: state::coord,
-                   dests: ~[state::coord], +v: ~[~[mut (bool, option<state::move>)]],
-                   bound: ~[boundary_element]) -> (option<path>, path_state) {
+                   dests: &[const option<state::coord>],
+                   +v: ~[~[mut (bool, ~[state::move])]],
+                   bound: ~[boundary_element]) 
+                   -> (option<(path, state::coord)>, path_state) {
     let mut visited = v;
     let mut boundary = bound;
     let (x, y) = src;
-    visited[y-1][x-1] = (true, some(state::W));
+    visited[y-1][x-1] = (true, ~[state::W]);
     let mut condition: option<state::coord> = none;
     while condition == none {
         boundary = propagate(b, boundary, visited);
@@ -86,49 +64,85 @@ fn genpath_restart(b: state::grid, src: state::coord,
         }
     }
     alt copy condition {
-      some(p) { ret (some(build_path(p, visited)), (visited, boundary)); }
+      some(p) { ret (some((build_path(p, visited), p)), (visited, boundary)); }
       none {fail}
     }
-    
 }
 
-fn build_path(p: state::coord, visited: ~[~[mut (bool, option<state::move>)]]) -> path {
+fn build_path(p: state::coord,
+              visited: ~[~[mut (bool, ~[state::move])]]) -> path {
+    //TODO(tony): handle trampolines.
     let (x, y) = p;
     alt visited[y-1][x-1] {
       (false, _) {fail}
-      (_, some(state::W)) {ret ~[];}
-      (_, some(state::U)) {ret vec::append_one(build_path((x,y-1), visited), state::U);}
-      (_, some(state::L)) {ret vec::append_one(build_path((x+1,y), visited), state::L);}
-      (_, some(state::R)) {ret vec::append_one(build_path((x-1,y), visited), state::R);}
-      (_, some(state::D)) {ret vec::append_one(build_path((x,y+1), visited), state::D);}
-      (_, _) {fail}
+      (_, l) {
+        if l == ~[] {
+            fail
+        }
+        else if l == ~[state::W] {
+            ret ~[];
+        }
+        else {
+            let (dx, dy) = compute_delta(l);
+            let lstack = copy l;
+            ret vec::append(build_path((x-dx, y-dy), visited), lstack);
+        }
+      }
     };
 }
 
-fn winner(dests: ~[state::coord],
-          visited: ~[~[mut (bool, option<state::move>)]]) -> option<state::coord> {
-    for dests.each() |p| {
-        let (x, y) = p;
-        let (cond, _move) = visited[y-1][x-1];
-        if cond {
-            ret some(p);
+pure fn compute_delta(l: ~[state::move]) -> (uint, uint) {
+    let delta_x = vec::count(l, state::R) - vec::count(l, state::L);
+    let delta_y = vec::count(l, state::U) - vec::count(l, state::D);
+    (delta_x, delta_y)
+}
+
+#[inline(always)]
+fn invert_move(m: state::move) -> state::move {
+    alt m {
+      state::U {state::D}
+      state::D {state::U}
+      state::L {state::R}
+      state::R {state::L}
+      // This last one shouldn't happen.
+      x        {x}
+    }
+}
+
+fn build_path_backwards(p: state::coord,
+              visited: ~[~[mut (bool, ~[state::move])]]) -> path {
+    vec::map(build_path(p, visited), invert_move)
+}
+
+fn winner(dests: &[const option<state::coord>],
+          visited: ~[~[mut (bool, ~[state::move] )]]) -> option<state::coord> {
+    for dests.each() |o| {
+        alt o {
+          some(p) {
+            let (x, y) = p;
+            let (cond, _moves) = visited[y-1][x-1];
+            if cond {
+                ret some(p);
+            }
+          }
+          none { again; }
         }
     }
     none
 }
 
 fn propagate(b: state::grid, boundary_list: ~[boundary_element],
-             visited: ~[~[mut (bool, option<state::move>)]]) -> ~[boundary_element] {
+             visited: ~[~[mut (bool, ~[state::move])]]) -> ~[boundary_element] {
     let mut ret_list: ~[boundary_element] = ~[];
     for boundary_list.each() |end| {
         let (p, _) = end;
-        for get_empty_neighbors(p, b).each() |t| {
+        for get_passable_neighbors(p, b).each() |t| {
             let (neighbor, m) = t;
             let (x, y) = neighbor;
-            let (cond, _move) = visited[y-1][x-1];
+            let (cond, _moves) = visited[y-1][x-1];
             if !cond {
-                ret_list += ~[(neighbor, m)];
-                visited[y-1][x-1] = (true, some(m));
+                ret_list += ~[(neighbor, ~[m])];
+                visited[y-1][x-1] = (true, ~[m]);
             }
         }
     }
@@ -139,7 +153,7 @@ fn get_square(p: state::coord, b: state::grid) -> state::square {
     b.at(p)
 }
 
-fn get_empty_neighbors(p: state::coord,
+fn get_passable_neighbors(p: state::coord,
                        b: state::grid) -> ~[(state::coord, state::move)] {
     vec::filter(get_neighbors(p), |t| {
         let (l, _) = t;
@@ -163,10 +177,14 @@ fn get_neighbors(p: state::coord) -> ~[(state::coord, state::move)] {
 fn test_genpath() {
     import state::*;
     import vec::*;
-
     let state = state::read_board(io::str_reader(#include_str("./maps/flood1.map")));
-    let (p, _) = genpaths(state.grid,(6,7),~[(6,2)]);
+    let (p, _) = genpaths(state.grid,(6,7),~[some((6,2))]);
     assert p.is_some();
-    let plen = option::get(p).len();
-    assert plen == 13;
+    let tuple = option::get(p);
+    alt tuple {
+      (list, _) {
+        let len = list.len();
+        assert len == 13;
+      }
+    }
 }

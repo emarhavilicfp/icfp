@@ -1,9 +1,10 @@
 // Path generator.
 
+import not_path = core::path;
 import path;
 import state;
 import state::extensions;
-import heuristics;
+import heuristics::*;
 
 // A lazy list of movelists.
 trait pathlist {
@@ -20,9 +21,15 @@ impl shit of pathlist for bblums_pathlist {
 }
 
 // TODO: Contain the game state by using a region pointer.
-type bblums_pathlist = (@mut option<brushfire>, @mut option<brushfire>);
-fn mk_bblums_pathlist() -> pathlist {
-    let state: bblums_pathlist = (@mut none, @mut none);
+type bblums_pathlist = {
+    pathstate: (@mut option<brushfire>, @mut option<brushfire>),
+    targets: ~[mut option<state::coord>]
+};
+
+fn mk_bblums_pathlist(s: state::state) -> pathlist {
+    let t = map_mut(s.grid.lambdas(), |x| some(x));
+    let state: bblums_pathlist =
+        { pathstate: (@mut none, @mut none), targets: t };
     state as pathlist
 }
 
@@ -44,26 +51,53 @@ fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
     }
 }
 
+// BUG: add this to vec.rs
+pure fn map_mut<T, U>(v: &[T], f: fn(T) -> U) -> ~[mut U] {
+    let mut result = ~[mut]; 
+    unchecked{vec::reserve(result, vec::len(v));}
+    for vec::each(v) |elem| { unsafe { vec::push(result, f(elem)); } }
+    ret result;
+}
+
 // This finds paths that don't require traversing any unsafe things.
 //
 // Unsafety is defined as moves that cause side effects, such as
 // dislodging a boulder.
-fn path_easy(s: state::state, fire: @mut option<brushfire>)
-        -> option<path::path> {
-    let lambdas = s.grid.lambdas();
+fn path_easy(s: state::state, fire: @mut option<brushfire>,
+             targets: &[mut option<state::coord>]) -> option<path::path> {
+    // Sets a slot in the targets list to 'none'
+    fn process_pathres(-x: option<(path::path,state::coord)>,
+                       targets: &[mut option<state::coord>])
+            -> option<path::path> {
+        if x.is_some() {
+            let (path,target_found) = option::unwrap(x);
+            // XXX XXX XXX: Asymptotic runtime loss: Fix genpaths to return
+            // an *index*, not a coord.
+            let mut i = 0;
+            while i < targets.len() {
+                if targets[i] == some(target_found) {
+                    targets[i] = none;
+                    break;
+                }
+                i += 1;
+            }
+            some(path)
+        } else { none }
+    }
+    // TODO: write this to produce a better datatype to begin with
     if fire.is_some() {
         let mut shit = none;
         *fire <-> shit;
         let (shit1, shit2) = option::unwrap(shit);
         // Get path and new state
         let (pathres, stateres) =
-            path::genpath_restart(s.grid, s.robotpos, lambdas, shit1, shit2);
+            path::genpath_restart(s.grid, s.robotpos, targets, shit1, shit2);
         *fire = some(stateres);
-        pathres
+        process_pathres(pathres, targets)
     } else {
-        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, lambdas);
+        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets);
         *fire = some(stateres);
-        pathres
+        process_pathres(pathres, targets)
     }
 
 }
@@ -75,10 +109,10 @@ fn path_aggressive(_s: state::state, _fire: @mut option<brushfire>)
  ****************************************************************************/
 
 // Finds a path to the lambda that makes us happiest.
-fn get_next_lambda(s: state::state, ps: bblums_pathlist)
+fn get_next_lambda(s: state::state, bblum: bblums_pathlist)
         -> option<(state::state,path::path)> {
-    let (easy_state,aggr_state) = ps;
-    let mut easy = path_easy(s, easy_state);
+    let (easy_state,aggr_state) = bblum.pathstate;;
+    let mut easy = path_easy(s, easy_state, bblum.targets);
     let mut aggressive = path_aggressive(s, aggr_state);
 
     // Diamonds are forever.
@@ -90,7 +124,7 @@ fn get_next_lambda(s: state::state, ps: bblums_pathlist)
         // path, or maybe they all suck.
         } else if easy.is_none() ||
                   (aggressive.is_some() &&
-                   heuristics::path_aggr_weight(path_len(aggressive.expect("asdf")))
+                   path_aggr_weight(path_len(aggressive.expect("asdf")))
                    < path_len(easy.expect("ghjkl"))) {
             let try_path = aggressive.expect("Ben's boolean logic bad (1)");
             // Bouldered path was 2/3 the length of easy path.
@@ -108,7 +142,7 @@ fn get_next_lambda(s: state::state, ps: bblums_pathlist)
             if newstate.is_some() {
                 ret some((option::unwrap(newstate), try_path)); // Satisfied!
             } else {
-                easy = path_easy(s, easy_state);
+                easy = path_easy(s, easy_state, bblum.targets);
                 again;
             }
         }

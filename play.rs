@@ -62,7 +62,7 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
         ret (dvec::from_elem(state::A), s, score);
     }
     // Attempt to do something next.
-    let result = mk_bblums_pathlist().next_target_path(s);
+    let result = mk_bblums_pathlist(s).next_target_path(s);
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
         if o.verbose {
@@ -84,7 +84,7 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
 fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     let mut best = none;
     let mut best_score = none; // Redundant. To avoid unwrapping 'best'.
-    let pathlist = mk_bblums_pathlist();
+    let pathlist = mk_bblums_pathlist(s);
     // Test for time run out.
     if signal::signal_received() && o.killable {
         let score = s.score;
@@ -172,12 +172,12 @@ mod test {
     fn test_play_game_check_hash() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
-        let mut result = mk_bblums_pathlist().next_target_path(s);
+        let mut result = mk_bblums_pathlist(s).next_target_path(s);
         while result != none {
             let (newstate, _path) = option::unwrap(result);
             assert newstate.hash() == newstate.rehash();
             s = newstate;
-            result = mk_bblums_pathlist().next_target_path(s);
+            result = mk_bblums_pathlist(s).next_target_path(s);
         }
     }
     #[test]
