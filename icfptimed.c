@@ -25,14 +25,14 @@ int main(int argc, char **argv)
 		alarm(3);
 		rv = wait(NULL);
 		if (rv > 0)
-			return;
+			return 0;
 		kill(pid, 2);
 		fprintf(stderr, "Your time has ended!!  SIGINT!\n");
 		
 		alarm(10);
 		rv = wait(NULL);
 		if (rv > 0)
-			return;
+			return 0;
 		kill(pid, 9);
 		fprintf(stderr, "Shit, and goodbye!\n");
 	}
