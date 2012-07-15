@@ -246,7 +246,7 @@ fn move_from_char(c: char) -> move {
     alt c {
         'u' {U} 'd' {D} 'l' {L} 'r' {R} 'w' { W } 'a' { A } 's' {S}
         'U' {U} 'D' {D} 'L' {L} 'R' {R} 'W' { W } 'A' { A } 'S' {S}
-        _ { fail; /* XXX do something more reasonable here */ }
+        _ { fail #fmt("move_from_char: %d?", c as int) /* XXX do something more reasonable here */ }
     }
 }
 

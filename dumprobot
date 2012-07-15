@@ -1,2 +1,2 @@
 #!/bin/sh
-./bin/icfp maps/$1.map | sed 's/\(.\)/\1\n/g' | tr UDLRA wsadq | ./human maps/$1.map
+./bin/icfp maps/$1.map | sed 's/\(.\)/\1\n/g' | ./human maps/$1.map

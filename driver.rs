@@ -77,6 +77,10 @@ fn human(init: state::state, engine: game_tree) {
                 bot_n += 1;
             }
             '\n' { res = none; io::println(state.to_str()); }
+            -1 as char { /* You bastard!  You lied to me!  That was an eof! */
+                res = some(state.step(state::A, false));
+                robot_plan = none;
+            }
             c {
                 res = some(state.step(state::move_from_char(c), false));
                 robot_plan = none;
