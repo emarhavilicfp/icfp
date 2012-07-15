@@ -111,14 +111,18 @@ fn get_next_lambda(s: state::state) -> option<(state::state,path::path)> {
 }
 
 // Repeatedly finds lambdas (hopefully). Generates the movelist backwards.
-fn greedy_finish(-s: state::state)
+fn greedy_finish(-s: state::state, verbose: bool)
         -> (dvec::dvec<state::move>, state::state) {
     // Attempt to do something next.
     let result = get_next_lambda(s);
+    if verbose {
+        io::println("Pursuing");
+    }
+
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
         // Find what to do next.
-        let (finishing_moves,endstate) = greedy_finish(newstate);
+        let (finishing_moves,endstate) = greedy_finish(newstate, verbose);
         // Do this stuff before.
         for path_for_each(path) |the_move| {
             finishing_moves.push(the_move);
@@ -135,8 +139,9 @@ fn greedy_finish(-s: state::state)
 //fn search(s: state::state, -moves_so_far: dvec::dvec<state::move>,
 //          o: search_opts) -> (
 
-fn play_game(+s: state::state) -> (~[mut state::move], state::state) {
-    let (moves_rev, endstate) = greedy_finish(s);
+fn play_game(+s: state::state, verbose: bool)
+    -> (~[mut state::move], state::state) {
+    let (moves_rev, endstate) = greedy_finish(s, verbose);
     let moves = dvec::unwrap(moves_rev);
     vec::reverse(moves);
     (moves,endstate)

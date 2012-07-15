@@ -65,7 +65,7 @@ fn human(init: state::state) {
                     }
                     none {
                         bot_n = 0;
-                        let (plan, _n) = play_game(copy state);
+                        let (plan, _n) = play_game(copy state, true);
                         res = some(state.step(plan[bot_n], false));
                         robot_plan = some(plan);
                     }
@@ -94,7 +94,7 @@ fn human(init: state::state) {
 
 fn robot(init: state::state) {
     import state::*;
-    let (moves, _) = play::play_game(copy init);
+    let (moves, _) = play::play_game(copy init, false);
     for moves.each |m| {
         io::print(m.to_str());
     }
