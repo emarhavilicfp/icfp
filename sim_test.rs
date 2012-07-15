@@ -94,3 +94,26 @@ fn boulder4() {
          #####\n"
     }
 }
+
+#[test]
+#[ignore]
+fn boulder5() {
+    test_step!{
+        "#####\n\
+         # R #\n\
+         #   #\n\
+         # W #\n\
+         #   #\n\
+         #####\n\
+              \n\
+         Growth 1\n",
+        W,
+        "#####\n\
+         # R #\n\
+         #WWW#\n\
+         #WWW#\n\
+         #WWW#\n\
+         #####\n"
+    }
+}
+
