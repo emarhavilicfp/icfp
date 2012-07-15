@@ -26,6 +26,7 @@ fn main(args: ~[str]) {
     let path_find = path_find::brushfire::mk();
     let engine = alt os::getenv("ENGINE") {
       some("simple") { game_tree::simple::mk(path_find) }
+      some("tobruos") { game_tree::tobruos::mk(path_find) }
       _ {
         game_tree::bblum::mk({
           path_find: path_find

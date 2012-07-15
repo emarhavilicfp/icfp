@@ -35,6 +35,7 @@ mod game_tree;
 mod game_tree {
     mod bblum;
     mod simple;
+    mod tobruos;
 }
 
 mod signal;
