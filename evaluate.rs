@@ -52,7 +52,7 @@ fn evaluate(s: state::state) -> int {
     let mut easy_target = path_easy(s, easy_state, targets);
     // Don't attempt to validate.
     while easy_target.is_some() {
-        let (path,sq) = easy_target.get();
+        let (_path,sq) = easy_target.get();
         alt s.grid.at(sq) {
             // TODO: Horocks and razors go here!
             state::lambda {

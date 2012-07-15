@@ -13,7 +13,9 @@ impl of path_find for t {
     fn get_paths(s: state::state) ->
             (fn @() -> option<(state::state, path::path)>) {
         let it = mk_iter(s);
-        fn @() -> option<(state::state, path::path)> {
+        // This copy could be avoided with region pointers.
+        // Or by not using the thunk interface.
+        fn @(copy s) -> option<(state::state, path::path)> {
             get_next_lambda(s, it)
         }
     }
@@ -49,7 +51,7 @@ fn path_len(p: path::path) -> uint { vec::len(p) }
 
 
 fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
-    alt path::apply(_ml, _s, false) {
+    alt path::apply(_ml, copy _s, false) {
         state::stepped(state) { some(state::extract_step_result(state)) }
         state::endgame(*) | state::oops { none } // XXX fix endgame
     }
