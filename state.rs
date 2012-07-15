@@ -73,7 +73,6 @@ type state = {
     razors: int,
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
-    destlambda: option<coord>, /* the lambda we were last known to be pursuing */
     score: int,
     /* We probably need a list of rocks here. */
 };
@@ -494,7 +493,6 @@ fn read_board(+in: io::reader) -> state {
         razors: razors,
         lambdas: 0,
         lambdasleft: lambdasleft_,
-        destlambda: option::none,
         score: 0,
     }
 }
@@ -744,7 +742,6 @@ impl extensions for state {
             razors: razors_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
-            destlambda: self.destlambda,
             score: score_
         }));
     }
