@@ -138,3 +138,25 @@ fn tramp1() {
          #####\n"
     }
 }
+
+#[test]
+#[ignore]
+// We die, as we should here, but the test harness isn't good enough
+// ot handle that.
+fn die1() {
+    test_step!{
+        "###\n\
+         #*#\n\
+         # #\n\
+         # #\n\
+         #R#\n\
+         ###\n",
+        U,
+        "###\n\
+         # #\n\
+         #*#\n\
+         #R#\n\
+         # #\n\
+         ###\n"
+    }
+}
