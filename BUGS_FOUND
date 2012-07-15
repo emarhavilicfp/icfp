@@ -1,7 +1,8 @@
 dlist iter-trait EACH implementation forgot to check rv
 test failures give no useful information if failure string not specified
  - a span (or even backtrace? perhaps with a verbose flag) would be nice
- dvec add reverse; vec add reach
+dvec add reverse; vec add reach
+vec add map_mut?
 
 negative constants don't work
 
