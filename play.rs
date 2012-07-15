@@ -7,8 +7,8 @@ import heuristics::*;
 import dvec;
 import dvec::extensions;
 import signal;
-import pathlist;
-import pathlist::*;
+import path_find;
+import path_find::*;
 
 // BUG: add this to libstd::util
 // pure fn rational_mul(x: rational, y: rational) -> rational {
@@ -62,7 +62,7 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
         ret (dvec::from_elem(state::A), s, score);
     }
     // Attempt to do something next.
-    let result = mk_bblums_pathlist(s).next_target_path(s);
+    let result = path_find::brushfire::mk(s).next_target_path(s);
     if result.is_some() {
         let (newstate,path) = option::unwrap(result);
         if o.verbose {
@@ -84,7 +84,7 @@ fn greedy_finish(-s: state::state, o: search_opts) -> search_result {
 fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
     let mut best = none;
     let mut best_score = none; // Redundant. To avoid unwrapping 'best'.
-    let pathlist = mk_bblums_pathlist(s);
+    let pathlist = path_find::brushfire::mk(s);
     // Test for time run out.
     if signal::signal_received() && o.killable {
         let score = s.score;
@@ -173,12 +173,12 @@ mod test {
     fn test_play_game_check_hash() {
         let s = #include_str("./maps/contest10.map");
         let mut s = state::read_board(io::str_reader(s));
-        let mut result = mk_bblums_pathlist(s).next_target_path(s);
+        let mut result = path_find::brushfire::mk(s).next_target_path(s);
         while result != none {
             let (newstate, _path) = option::unwrap(result);
             assert newstate.hash() == newstate.rehash();
             s = newstate;
-            result = mk_bblums_pathlist(s).next_target_path(s);
+            result = path_find::brushfire::mk(s).next_target_path(s);
         }
     }
     #[test]

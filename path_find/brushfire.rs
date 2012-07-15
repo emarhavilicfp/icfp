@@ -8,14 +8,7 @@ import heuristics::*;
 
 import path::target;
 
-// A lazy list of movelists.
-trait pathlist {
-    // Should always be the same state. Needs knowledge of region ptrs to fix.
-    fn next_target_path(s: state::state)
-        -> option<(state::state, path::path)>;
-}
-
-impl shit of pathlist for bblums_pathlist {
+impl of path_find for bblums_pathlist {
     fn next_target_path(s: state::state)
             -> option<(state::state, path::path)> {
         get_next_lambda(s, self)
@@ -28,11 +21,11 @@ type bblums_pathlist = {
     targets: ~[mut option<state::coord>]
 };
 
-fn mk_bblums_pathlist(s: state::state) -> pathlist {
+fn mk(s: state::state) -> path_find {
     let t = map_mut(s.grid.lambdas(), |x| some(x));
     let state: bblums_pathlist =
         { pathstate: (@mut none, @mut none), targets: t };
-    state as pathlist
+    state as path_find
 }
 
 /****************************************************************************

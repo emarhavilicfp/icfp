@@ -26,7 +26,11 @@ mod dlist;
 mod fuzzer;
 mod heuristics;
 mod play;
-mod pathlist;
+
+mod path_find;
+mod path_find {
+    mod brushfire;
+}
 
 mod signal;
 
