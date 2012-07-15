@@ -41,4 +41,9 @@ fn main(args: ~[str]) {
           _ { fail }
         }
     }
+    
+    alt state.step(state::A, false) {
+      state::endgame(points) { io::print(#fmt("%d", points)); }
+      _ { fail }
+    }
 }
