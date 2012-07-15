@@ -23,7 +23,7 @@ fn get_path(opts: settings, +s: state::state) -> ~[state::move] {
     let mut bestscore = 0;
     let mut depth = 0u;
     
-    while !signal::signal_received() {
+    while !signal::signal_received() && depth < 50 /* We're probably not getting much better from there. */ {
     	#error["tobruos: here we go with depth %u", depth];
         /* Do a top-level search on an increasing depth. */
         let (path, score) = get_path_depth(opts, copy s, depth);
@@ -61,43 +61,42 @@ fn get_path_depth(opts: settings, +s: state::state, depth: uint) -> (~[state::mo
 
 /* Given a state, given the best top-level choice we can make, looking depth steps ahead. */
 fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<~[state::move]> {
-    let mut bestpath = ~[];
+    let mut bestpath = none;
     let mut bestscore = 0;
     
     let mut paththunks = ~[];
-    let mut fullpath = ~[];
     
     /* Prime it with a path thunk to pull on. */
-    vec::push(paththunks, opts.path_find.get_paths(s));
-    vec::push(fullpath, ~[]);
-    
-    while paththunks.len() != 0 && !signal::signal_received() {
-        /* Pull on the thunk. */
-        alt paththunks[paththunks.len() - 1]() {
-          none {
-            /* I'm sorry, did I break your concentration? ... Oh, you were finished?  Well, allow me to retort. */
-            vec::pop(paththunks);
-            vec::pop(fullpath);
-          }
-          some((news, path)) {
-            if paththunks.len() < depth { /* Say what again. */
-                vec::push(fullpath, path);
-                vec::push(paththunks, opts.path_find.get_paths(news)); 
+    let rootthunk = opts.path_find.get_paths(s);
+    let mut curroot = rootthunk();
+    while curroot != none {
+        let (st, rootpath) = option::unwrap(curroot);
+        
+        /* We have a root -- start off with the traversal node for that root. */
+        vec::push(paththunks, opts.path_find.get_paths(st));
+        while paththunks.len() != 0 && !signal::signal_received() {
+            /* Pull on the thunk. */
+            alt paththunks[paththunks.len() - 1]() {
+              none {
+                /* I'm sorry, did I break your concentration? ... Oh, you were finished?  Well, allow me to retort. */
+                vec::pop(paththunks);
+              }
+              some((news, path)) {
+                if paththunks.len() < depth { /* Say what again. */
+                    vec::push(paththunks, opts.path_find.get_paths(news)); 
+                }
+                
+                if news.score > bestscore { /* Then you know what I'm sayin'! */
+                    bestpath = some(rootpath);
+                    bestscore = news.score;
+                }
+              }
             }
-            
-            if news.score > bestscore { /* Then you know what I'm sayin'! */
-                bestpath = fullpath;
-                bestscore = news.score;
-            }
-          }
         }
+        curroot = rootthunk();
     }
     
-    if bestpath.len() <= 1 {
-        none
-    } else { 
-        some(bestpath[1])
-    }
+    bestpath
 }
 
 fn mk(o: path_find) -> game_tree {
