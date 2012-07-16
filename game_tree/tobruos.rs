@@ -60,7 +60,7 @@ fn get_path_depth(opts: settings, +s: state::state, depth: uint) -> (~[state::mo
 }
 
 /* Given a state, given the best top-level choice we can make, looking depth steps ahead. */
-fn get_best_top_option(opts: settings, +s: state::state, depth: uint) -> option<~[state::move]> {
+fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<~[state::move]> {
     let mut bestpath = ~[];
     let mut bestscore = 0;
     

@@ -11,11 +11,9 @@ import path::target;
 enum t {_dummy}
 impl of path_find for t {
     fn get_paths(s: state::state) ->
-            (fn @() -> option<(state::state, path::path)>) {
+        (fn@() -> option<(state::state, path::path)>) {
         let it = mk_iter(s);
-        fn @() -> option<(state::state, path::path)> {
-            get_next_lambda(s, it)
-        }
+        |copy s| get_next_lambda(s, it)
     }
 }
 

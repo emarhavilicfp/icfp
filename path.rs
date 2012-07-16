@@ -68,8 +68,8 @@ impl<L: target, R: target> of target for either<L, R> {
 
 
 
-fn apply(p: path, +st: state::state, strict: bool) -> state::step_result {
-    let mut st_ <- st;
+fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
+    let mut st_ = copy st;
     for p.each |the_move| {
             alt st_.step(the_move, strict) {
               state::stepped(st__) {

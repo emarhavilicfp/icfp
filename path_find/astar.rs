@@ -20,7 +20,7 @@ impl of path_find for t {
             (fn @() -> option<(state::state, path::path)>) {
         let targets = map_mut(s.grid.lambdas(), |x| x);
         let index = @mut 0;
-        fn @() -> option<(state::state, path::path)> {
+        fn @(copy s) -> option<(state::state, path::path)> {
             if (targets.len() == *index) {
                 ret none;
             }
@@ -77,7 +77,7 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
     }
     fn mk_cost(s: state::state) -> (fn@(state::coord, state::coord) -> uint) {
         let h = s.grid.grid.len();
-        fn @(a:state::coord, b:state::coord) -> uint {
+        fn @(a:state::coord, b:state::coord, copy s) -> uint {
             let mut c;
             /* TODO lift this somewhere and better heuristics */
             alt s.grid.at(b) {

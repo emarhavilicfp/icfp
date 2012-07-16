@@ -121,10 +121,10 @@ fn human(init: state::state, engine: game_tree) {
 
 }
 
-fn robot(init: state::state, engine: game_tree) {
+fn robot(+init: state::state, engine: game_tree) {
     import state::*;
     
-    let moves = engine.get_path(copy init);
+    let moves = engine.get_path(init);
     for moves.each |m| {
         io::print(m.to_str());
     }

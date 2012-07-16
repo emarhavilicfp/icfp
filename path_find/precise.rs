@@ -10,12 +10,11 @@ impl of path_find for u {
             (fn @() -> option<(state::state, path::path)>) {
 
         let get_paths_imp = (*self).get_paths(s);
-        ret || {
+        |copy s| 
             alt get_paths_imp() {
-                some((_, path)) { self.handle_imp_path(s, path) }
-                none { none }
+              some((_, path)) { self.handle_imp_path(s, path) }
+              none { none }
             }
-        }
     }
 
     fn handle_imp_path(s : state::state, imp_path : path::path)
