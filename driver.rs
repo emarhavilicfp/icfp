@@ -24,7 +24,14 @@ fn main(args: ~[str]) {
 
     signal::init();
     
-    let path_find = path_find::astar::mk();
+    let path_find = alt os::getenv("PATHFIND") {
+      some("astar") { path_find::astar::mk() }
+      _ {
+        path_find::precise::mk(
+          path_find::brushfire::mk()
+        )
+      }
+    };
     let engine = alt os::getenv("ENGINE") {
       some("simple") { game_tree::simple::mk(path_find) }
       some("tobruos") { game_tree::tobruos::mk(path_find) }
