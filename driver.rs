@@ -157,21 +157,36 @@ fn robot(+init: state::state, engine: game_tree) {
 
 fn find_hard_coded(s: state::state) -> option<str> {
     alt s.grid.hash {
-      1585882910 {some("maps/contest10.map")}
-      1652843932 {some("maps/contest1.map")}
-      2598939992 {some("maps/contest2.map")}
-      743435179 {some("maps/contest3.map")}
-      1452394536 {some("maps/contest4.map")}
-      2056414715 {some("maps/contest5.map")}
-      745578453 {some("maps/contest6.map")}
-      322669917 {some("maps/contest7.map")}
-      1711244539 {some("maps/contest8.map")}
-      2625681711 {some("maps/contest9.map")}
-      1185558828 {some("maps/flood1.map")}
-      1549412226 {some("maps/flood2.map")}
-      527250308 {some("maps/flood3.map")}
-      4056672759 {some("maps/flood4.map")}
-      4058792550 {some("maps/flood5.map")}
+      1585882910 {some("contest10.map")}
+      1652843932 {some("contest1.map")}
+      2598939992 {some("contest2.map")}
+      743435179 {some("contest3.map")}
+      1452394536 {some("contest4.map")}
+      2056414715 {some("contest5.map")}
+      745578453 {some("contest6.map")}
+      322669917 {some("contest7.map")}
+      1711244539 {some("contest8.map")}
+      2625681711 {some("contest9.map")}
+      1185558828 {some("flood1.map")}
+      1549412226 {some("flood2.map")}
+      527250308 {some("flood3.map")}
+      4056672759 {some("flood4.map")}
+      4058792550 {some("flood5.map")}
       _ {none}
     }
+}
+
+fn compare_states(s1: state::state, s2: state::state) -> bool {
+    let g1 = s1.grid.grid;
+    let g2 = s2.grid.grid;
+    if g1.len() != g2.len() { ret false; }
+    else if g1[0].len() != g2[0].len() { ret false; }
+    else {
+        for uint::range(0, g1.len()) |i| {
+            for uint::range(0, g1[0].len()) |j| {
+                if g1[i][j] != g2[i][j] {ret false;}
+            }
+        }
+    }
+    true
 }
