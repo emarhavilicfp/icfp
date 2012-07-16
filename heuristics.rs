@@ -1,6 +1,6 @@
 fn path_aggr_weight(aggr_len: uint) -> uint { aggr_len * 3 / 2 }
 
-fn branch_factor() -> uint { 5 }
+fn branch_factor() -> uint { 7 }
 
 // for the searcher granularity thingie. How much to trim the average path
 // length? Just to be sure we don't get diqed.
@@ -15,7 +15,7 @@ const bird_in_hand_multiplier: int = 1000;
 const worklist_bufsize: uint = 1048576;
 const worklist_sorted: bool = false;
 
-fn cargomax_munge_avg_depth(avg: uint) -> uint { avg }
+fn cargomax_munge_avg_depth(avg: uint) -> uint { avg/3 }
 
 // move ordering (trivial)
 // water check in trans table
