@@ -113,3 +113,10 @@ fn robot(init: state::state, engine: game_tree) {
     }
     io::println("");
 }
+
+fn find_hard_coded(s: state::state) -> option<str> {
+    alt s.grid.hash {
+      
+      _ {none}
+    }
+}
