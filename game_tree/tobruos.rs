@@ -76,13 +76,13 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(
           none { break }
         };
         #debug["tobruos:      root thunk returned a state of score %d", st.score];
-        let mut scores : u64 = evaluate(st) as u64;
-        let mut paths : u64 = 1;
-        let mut bestlocal : u64 = 0;
+        let mut scores : i64 = evaluate(st) as i64;
+        let mut paths : i64 = 1;
+        let mut bestlocal : i64 = 0;
         
         let localeval = evaluate(st);
-        if localeval as u64 > bestlocal {
-            bestlocal = localeval as u64;
+        if localeval as i64 > bestlocal {
+            bestlocal = localeval as i64;
         }
         
         /* We have a root -- start off with the traversal node for that root. */
@@ -99,11 +99,11 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(
                     vec::push(paththunks, opts.path_find.get_paths(news)); 
                 }
                 let newseval = evaluate(news);
-                scores = scores + evaluate(news) as u64;
+                scores = scores + evaluate(news) as i64;
                 paths = paths + 1;
                 
-                if newseval as u64 > bestlocal { /* Then you know what I'm sayin'! */
-                    bestlocal = newseval as u64;
+                if newseval as i64 > bestlocal { /* Then you know what I'm sayin'! */
+                    bestlocal = newseval as i64;
                 }
               }
             }
