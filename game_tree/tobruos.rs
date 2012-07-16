@@ -50,7 +50,7 @@ fn get_path_depth(opts: settings, +s: state::state, depth: uint) -> (~[state::mo
         for path.each |mv| {
             alt state.step(mv, false) {
               state::stepped(s) { state = state::extract_step_result(s) }
-              state::endgame(pts) { ret (fullpath, pts) }
+              state::endgame(_, pts) { ret (fullpath, pts) }
               _ { fail }
             }
         }
