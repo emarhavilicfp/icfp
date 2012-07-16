@@ -27,9 +27,9 @@ fn main(args: ~[str]) {
     let path_find = alt os::getenv("PATHFIND") {
       some("astar") { path_find::astar::mk() }
       _ {
-        path_find::precise::mk(
+        //path_find::precise::mk(
           path_find::brushfire::mk()
-        )
+        //)
       }
     };
     let engine = alt os::getenv("ENGINE") {

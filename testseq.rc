@@ -39,6 +39,7 @@ mod game_tree {
 }
 
 mod signal;
+mod evaluate;
 
 #[cfg(test)]
 mod sim_test;
