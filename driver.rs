@@ -46,15 +46,7 @@ fn main(args: ~[str]) {
       some("octopus") {
         game_tree::octopus::octopus(~[
             fn~() -> game_tree::game_tree {
-                game_tree::simple::mk(driver::path_find())
-            },
-            fn~() -> game_tree::game_tree {
                 game_tree::tobruos::mk(driver::path_find())
-            },
-            fn~() -> game_tree::game_tree {
-                game_tree::bblum::mk({
-                    path_find: driver::path_find()
-                    with game_tree::bblum::default_opts()})
             },
             fn~() -> game_tree::game_tree {
                 game_tree::cargomax::mk({
