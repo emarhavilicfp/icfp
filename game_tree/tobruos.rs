@@ -7,6 +7,7 @@ import dvec::extensions;
 import signal;
 import path_find;
 import path_find::*;
+import evaluate::evaluate;
 
 type settings = {
     path_find: path_find
@@ -75,12 +76,13 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(
           none { break }
         };
         #debug["tobruos:      root thunk returned a state of score %d", st.score];
-        let mut scores : u64 = st.score as u64;
+        let mut scores : u64 = evaluate(st) as u64;
         let mut paths : u64 = 1;
         let mut bestlocal : u64 = 0;
         
-        if st.score as u64 > bestlocal {
-            bestlocal = st.score as u64;
+        let localeval = evaluate(st);
+        if localeval as u64 > bestlocal {
+            bestlocal = localeval as u64;
         }
         
         /* We have a root -- start off with the traversal node for that root. */
@@ -96,11 +98,12 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(
                 if paththunks.len() < depth { /* Say what again. */
                     vec::push(paththunks, opts.path_find.get_paths(news)); 
                 }
-                scores = scores + news.score as u64;
+                let newseval = evaluate(news);
+                scores = scores + evaluate(news) as u64;
                 paths = paths + 1;
                 
-                if news.score as u64 > bestlocal { /* Then you know what I'm sayin'! */
-                    bestlocal = news.score as u64;
+                if newseval as u64 > bestlocal { /* Then you know what I'm sayin'! */
+                    bestlocal = newseval as u64;
                 }
               }
             }
