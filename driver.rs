@@ -34,10 +34,11 @@ fn main(args: ~[str]) {
     let state = state::read_board(io::str_reader(map));
 
     signal::init();
-    alt emit_preset_moves(state) {
-      none { }
-      some(s) {io::println(s); ret}}
-    
+    if os::getenv("USE_HARDCODED") != none {
+        alt emit_preset_moves(state) {
+          none { }
+          some(s) {io::println(s); ret}}
+    }
     let path_find = path_find();
     let engine = alt os::getenv("ENGINE") {
       some("simple") { game_tree::simple::mk(path_find) }
