@@ -592,6 +592,8 @@ impl extensions for state {
           S { (x, y) }
           A { /* Abort!  Abort! */
             self.score = score_ + self.lambdas * lambda_score;
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
             ret endgame(@copy self, self.score)
           }
         };
@@ -782,18 +784,24 @@ impl extensions for state {
         
         if underwater_ > self.waterproof {
             if strict { ret oops(@copy self); }
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
             ret endgame(@copy self, score_);
         }
 
         /* Have we won? */
         if grid_.at((x_, y_)) == lift_o {
             self.score = score_ + lambdas_ * 50;
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
             ret endgame(@copy self, self.score);
         }
 
         /* Check to see if rocks fall *after* we could have successfully taken the lambda lift. */
         if *rocks_fall {
             if strict { ret oops(@copy self); }
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
             ret endgame(@copy self, score_);
         }
 
