@@ -65,7 +65,10 @@ on each map, using Rust tasks (the built-in unit of parallelism). An
 "octopus" at the top level spawns and collects the results of each
 algorithm and chooses the highest-scoring one.
 
-We spent too much time on search and too little time on backend. 
+We spent too much time on search and too little time on backend. We have
+simulation rules for all of the rules extensions, so the pathing and
+search can know what's legal and what isn't, but we have no heuristics
+for them, nor any code that knows how to shave.
 
 GAME TREE SEARCH
 ----------------
@@ -155,6 +158,18 @@ PATHING
 
 PATTERNS
 --------
+
+We compute how to get around boulders by applying pattern-matches to
+areas near the robot while pathing. A pattern is a very small grid of
+squares which a known sequence of moves can get past. The pattern
+matching language includes items like "eatable", "passable",
+"fall-right", "fall-left", "solid", "empty", etc. Patterns also have a
+notion of symmetry.
+
+More complicated patterns have lower cost heuristics, because applying
+them is more likely to result in success. We can fall back to simpler
+patterns, such as "If you're next to a boulder, try pushing it!" or "If
+a boulder is above you, try walking under it", which have higher cost.
 
 THIS README
 -----------
