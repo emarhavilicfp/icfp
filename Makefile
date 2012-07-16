@@ -24,11 +24,11 @@ ifeq ($(MODE),dynamic)
 
 bin/icfp: $(ICFP_SRC) $(C_OBJ)
 	mkdir -p ./bin
-	rustc icfp.rc -o ./bin/icfp
+	rustc -O icfp.rc -o ./bin/icfp
 
 bin/testseq: $(ICFP_SRC) $(C_OBJ)
 	mkdir -p ./bin
-	rustc testseq.rc -o ./bin/testseq
+	rustc -O testseq.rc -o ./bin/testseq
 
 else
 
@@ -37,7 +37,7 @@ LDFLAGS=-lpthread -lrt -ldl
 
 
 bin/icfp: $(ICFP_SRC) $(C_OBJ)
-	rustc -c icfp.rc
+	rustc -O -c icfp.rc
 	mkdir -p ./bin
 	g++ -o ./bin/icfp ${CFLAGS} icfp.o c_signal.o lib/*.o lib/*.a ${LDFLAGS}
 
@@ -47,7 +47,7 @@ endif
 
 check: $(ICFP_SRC) $(C_OBJ)
 	mkdir -p ./bin
-	rustc icfp.rc -o ./bin/icfp-test --test
+	rustc -O icfp.rc -o ./bin/icfp-test --test
 	./bin/icfp-test
 
 clean:
