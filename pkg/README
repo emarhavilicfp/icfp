@@ -156,6 +156,9 @@ Here we add three items to the workqueue: {prefix + A's-moves-up-to-5},
 PATHING
 -------
 
+We use a modified A* algorithm to compute paths, regarding spots where we will
+definitely die or abort as unpassable.
+
 PATTERNS
 --------
 
