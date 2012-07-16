@@ -70,6 +70,9 @@ simulation rules for all of the rules extensions, so the pathing and
 search can know what's legal and what isn't, but we have no heuristics
 for them, nor any code that knows how to shave.
 
+In the end, the algorithm we chose did not even know how to move boulders
+around.
+
 GAME TREE SEARCH
 ----------------
 
