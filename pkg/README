@@ -90,6 +90,10 @@ out, branching at the first 'depth' decision points. When it reaches
 
     TOBRUOS.
 
+Tobruos was named after an IRC bot's Markov-like talk function.  The basic
+concept is that it incrementally chooses at each decision point by looking
+ahead n steps in the game tree.  It ended up not being as good as Cargomax.
+
     CARGOMAX.
 
 Cargomax was designed to fix iterative deepening's weakness of only
@@ -147,3 +151,18 @@ PATHING
 
 PATTERNS
 --------
+
+THIS README
+-----------
+
+Will probably be incomplete, since we probably will have run out of time.
+
+CARGOFAX (ARENA)
+----------------
+
+We constructed an arena to automatically test a handful of candidates at
+once against each other.  It was named CARGOFAX, because a team I previously
+played with had arenas named CARFAX (two years ago) and CARDFAX (last year). 
+Most of the files for the arena are in etc/, but they are difficult to set
+up without already having our infrastructure.  Sample output from the arena
+lives in sample.html.  (We are not very good.)
