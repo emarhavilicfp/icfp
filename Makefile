@@ -18,7 +18,8 @@ ICFP_SRC = icfp.rc \
 	   game_tree/cargomax.rs \
 	   fuzzer.rs \
 	   testseq.rc \
-	   testseq_driver.rs
+	   testseq_driver.rs \
+       octopus.rs \
 
 # Remember to add modules for your .rs files in icfp.rc too!
 ifeq ($(MODE),dynamic)
