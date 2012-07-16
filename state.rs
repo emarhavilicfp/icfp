@@ -609,7 +609,7 @@ impl extensions for state {
         alt move {
             S {
                 if razors_ > 0 {
-                    razors_ =- 1;
+                    razors_ -= 1;
                     for uint::range(x_-1, x+2) |x__| {
                         for uint::range(y-1, y+2) |y__| {
                             let c = (x__, y__);
