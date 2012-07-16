@@ -104,6 +104,7 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(
             }
         }
         
+        /* A better scoring mechanism here would be nice, too. */
         let rootscore = scores / paths + bestlocal * 3;
         if rootscore > bestscore {
             bestscore = rootscore;
