@@ -127,16 +127,21 @@ fn robot(init: state::state, engine: game_tree) {
 
 fn find_hard_coded(s: state::state) -> option<str> {
     alt s.grid.hash {
-      1741265452 {some("contest10.map")}
-      3605867925 {some("contest1.map")}
-      4134371050 {some("contest2.map")}
-      2508214527 {some("contest3.map")}
-      1756252750 {some("contest4.map")}
-      2249528650 {some("contest5.map")}
-      152616109  {some("contest6.map")}
-      3554528266 {some("contest7.map")}
-      1507118883 {some("contest8.map")}
-      349313564  {some("contest9.map")}
+      1585882910 {some("maps/contest10.map")}
+      1652843932 {some("maps/contest1.map")}
+      2598939992 {some("maps/contest2.map")}
+      743435179 {some("maps/contest3.map")}
+      1452394536 {some("maps/contest4.map")}
+      2056414715 {some("maps/contest5.map")}
+      745578453 {some("maps/contest6.map")}
+      322669917 {some("maps/contest7.map")}
+      1711244539 {some("maps/contest8.map")}
+      2625681711 {some("maps/contest9.map")}
+      1185558828 {some("maps/flood1.map")}
+      1549412226 {some("maps/flood2.map")}
+      527250308 {some("maps/flood3.map")}
+      4056672759 {some("maps/flood4.map")}
+      4058792550 {some("maps/flood5.map")}
       _ {none}
     }
 }
