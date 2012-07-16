@@ -216,39 +216,39 @@ fn navigar(s: state::state, dest: state::coord, patmap: map::hashmap<state::coor
                 again;
             }
 
-            alt patmap.find(n) {
-                some(pat) {
-                    let mut pathnext = ~[];
-                    let mut accum = path;
-                    vec::push(pathnext, m_);
-                    for pat.cmd.each |cmd| {
-                        vec::push(pathnext, copy cmd);
-                    }
-                    let mut lastpos = spot_;
-                    let mut goahead = true;
-                    //for pathnext.each |cmd| {
-                    //    let tempcost = cost(lastpos, lastpos.move(cmd), cmd);
-                    //    if (tempcost == 0) {
-                    //        goahead = false;
-                    //        break;
-                    //    }
-                    //    lastpos = lastpos.move(cmd);
-                    //}
-                    if goahead {
-                        for pathnext.each |cmd| {
-                            let tempcost = cost(spot_, n, m_);
-                            if (tempcost != 0) {
-                                again;
-                            }
-                            pqins(pq, (n, some(cmd), accum, oldcost), oldcost);
-                            vec::push(accum, cmd);
-                        }
-                        again;
-                    }
-                }
-                none {
-                }
-            }
+//            alt patmap.find(n) {
+//                some(pat) {
+//                    let mut pathnext = ~[];
+//                    let mut accum = path;
+//                    vec::push(pathnext, m_);
+//                    for pat.cmd.each |cmd| {
+//                        vec::push(pathnext, copy cmd);
+//                    }
+//                    let mut lastpos = spot_;
+//                    let mut goahead = true;
+//                    //for pathnext.each |cmd| {
+//                    //    let tempcost = cost(lastpos, lastpos.move(cmd), cmd);
+//                    //    if (tempcost == 0) {
+//                    //        goahead = false;
+//                    //        break;
+//                    //    }
+//                    //    lastpos = lastpos.move(cmd);
+//                    //}
+//                    if goahead {
+//                        for pathnext.each |cmd| {
+//                            let tempcost = cost(spot_, n, m_);
+//                            if (tempcost != 0) {
+//                                again;
+//                            }
+//                            pqins(pq, (n, some(cmd), accum, oldcost), oldcost);
+//                            vec::push(accum, cmd);
+//                        }
+//                        again;
+//                    }
+//                }
+//                none {
+//                }
+//            }
             let tempcost = cost(spot_, n, m_);
             if (tempcost == 0) {
                 again;
