@@ -186,7 +186,7 @@ impl extensions for grid {
             let matches = pattern::matched_pats(self, pats);
             for matches.each() |pat|{
                 let (c,p) = pat;
-                vec::append_one(vias, targets::Pattern(c, *p));
+                vec::push(vias, targets::Pattern(c, *p));
             }
             vias
     }

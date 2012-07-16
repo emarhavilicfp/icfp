@@ -8,7 +8,7 @@ import dvec::extensions;
 import heuristics;
 import bblum = path_find::brushfire;
 import path;
-import path::target;
+import targets::target;
 
 // List of pairs (position, score)
 type lambdalist = dlist::dlist<(state::coord, int)>;
@@ -48,23 +48,25 @@ fn evaluate(s: state::state) -> int {
     let mut score = s.score;
     // FIXME: open-coded special-case pathfinder. joshua mad.
     let targets = bblum::map_mut(s.grid.lambdas(), |x| some(x));
+    let vias = bblum::map_mut(s.grid.vias(), |x| some(x));
+
     let easy_state = @mut none;
-    let mut easy_target = path_easy(s, easy_state, targets);
+    let mut easy_target = path_easy(s, easy_state, targets, vias);
     // Don't attempt to validate.
     while easy_target.is_some() {
-        let (path,sq) = easy_target.get();
-        alt s.grid.at(sq) {
+        let (p,dicks) = easy_target.get();
+        alt dicks {
             // TODO: Horocks and razors go here!
-            state::lambda {
+            targets::Lambda(loss) {
                 score += lambda_in_bush_score;
             }
-            state::lift_o {
+            targets::OpenLift(i) {
                 // Won game, it seems. The rest of the search should find this
                 // so no need to incorporate it in the eval.
             }
             _ {}
         }
-        easy_target = path_easy(s, easy_state, targets);
+        easy_target = path_easy(s, easy_state, targets, vias);
     }
     score
 }
@@ -106,12 +108,13 @@ fn evaluate(state: state, expensive: bool) -> int {
 // Heinous glue.
 // NB: Unlike the one in brushfire.rs, this one returns a coord, not a path.
 fn path_easy(s: state::state, fire: @mut option<bblum::brushfire>,
-             targets: &[mut option<state::coord>])
-        -> option<(path::path,state::coord)> {
+             targets: &[mut option<targets::gotoThing>], 
+             vias: &[mut option<targets::viaThing>])
+        -> option<(path::path,targets::gotoThing)> {
     // Sets a slot in the targets list to 'none'
-    fn process_pathres(-x: option<(path::path,state::coord)>,
-                       targets: &[mut option<state::coord>])
-            -> option<(path::path,state::coord)> {
+    fn process_pathres(-x: option<(path::path,targets::gotoThing)>,
+                       targets: &[mut option<targets::gotoThing>])
+            -> option<(path::path,targets::gotoThing)> {
         if x.is_some() {
             let (path,target_found) = option::unwrap(x);
             // XXX XXX XXX: Asymptotic runtime loss: Fix genpaths to return
@@ -134,11 +137,12 @@ fn path_easy(s: state::state, fire: @mut option<bblum::brushfire>,
         let (shit1, shit2) = option::unwrap(shit);
         // Get path and new state
         let (pathres, stateres) =
-            path::genpath_restart(s.grid, s.robotpos, targets, shit1, shit2);
+            path::genpath_restart(s.grid, s.robotpos, targets, vias, shit1,
+                shit2, false);
         *fire = some(stateres);
         process_pathres(pathres, targets)
     } else {
-        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets);
+        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets, vias, false);
         *fire = some(stateres);
         process_pathres(pathres, targets)
     }   

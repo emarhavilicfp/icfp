@@ -48,7 +48,8 @@ impl of target for viaThing {
       alt self {
         Pattern(c,p) { 
             let (x,y) = c;
-            let finPos = (x + p.off_c_dest, y - p.off_r_dest);
+            let finPos = (x + (p.off_c_dest - p.off_c), y - (p.off_r_dest -
+            p.off_r));
             (finPos, p.cmd)
         }
         Trampoline(c,t) {

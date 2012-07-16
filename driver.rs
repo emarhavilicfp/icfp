@@ -21,7 +21,7 @@ fn main(args: ~[str]) {
     }
 
     let state = state::read_board(io::str_reader(map));
-
+    pattern::demo_pats(state.grid);
     signal::init();
     
     let path_find = path_find::brushfire::mk();
