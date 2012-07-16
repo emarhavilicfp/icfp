@@ -37,6 +37,7 @@ fn main(args: ~[str]) {
           state::stepped(s) { state = state::extract_step_result(s); }
           state::endgame(points) {
             io::print(#fmt("%d", points));
+            libc::exit(0)
           }
           _ { fail }
         }
