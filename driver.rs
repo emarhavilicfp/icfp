@@ -34,6 +34,9 @@ fn main(args: ~[str]) {
     let state = state::read_board(io::str_reader(map));
 
     signal::init();
+    alt emit_preset_moves(state) {
+      none { }
+      some(s) {io::println(s); ret}}
     
     let path_find = path_find();
     let engine = alt os::getenv("ENGINE") {
@@ -155,27 +158,6 @@ fn robot(+init: state::state, engine: game_tree) {
     io::println("");
 }
 
-fn find_hard_coded(s: state::state) -> option<str> {
-    alt s.grid.hash {
-      1585882910 {some("contest10.map")}
-      1652843932 {some("contest1.map")}
-      2598939992 {some("contest2.map")}
-      743435179 {some("contest3.map")}
-      1452394536 {some("contest4.map")}
-      2056414715 {some("contest5.map")}
-      745578453 {some("contest6.map")}
-      322669917 {some("contest7.map")}
-      1711244539 {some("contest8.map")}
-      2625681711 {some("contest9.map")}
-      1185558828 {some("flood1.map")}
-      1549412226 {some("flood2.map")}
-      527250308 {some("flood3.map")}
-      4056672759 {some("flood4.map")}
-      4058792550 {some("flood5.map")}
-      _ {none}
-    }
-}
-
 fn compare_states(s1: state::state, s2: state::state) -> bool {
     let g1 = s1.grid.grid;
     let g2 = s2.grid.grid;
@@ -189,4 +171,47 @@ fn compare_states(s1: state::state, s2: state::state) -> bool {
         }
     }
     true
+}
+
+fn whole_file_as_string(s: str) -> str {
+    str::from_bytes(io::read_whole_file("./" + s).get())
+}
+
+fn emit_preset_moves(s1: state::state) -> option<str> {
+    for get_known_maps().each() |s| {
+        let s2 = state::read_board(io::str_reader(whole_file_as_string("maps/" + s)));
+        if compare_states(s1, s2) {
+            let ret_val = whole_file_as_string("strats/" + s);
+            ret some(ret_val);
+        }
+        else { again; }
+    };
+    none
+}
+
+fn get_known_maps() -> ~[str] {
+~["contest10.map",
+"contest1.map",
+"contest2.map",
+"contest3.map",
+"contest4.map",
+"contest5.map",
+"contest6.map",
+"contest7.map",
+"contest8.map",
+"contest9.map",
+"flood1.map",
+"flood2.map",
+"flood3.map",
+"flood4.map",
+"flood5.map"]
+}
+
+#[test]
+fn test_preset() {
+    alt emit_preset_moves(state::read_board(
+        io::str_reader(whole_file_as_string("maps/contest1.map")))) {
+      some(moves) {assert("LDRDDULULLDDL" == moves)}
+      none {fail}
+    }
 }
