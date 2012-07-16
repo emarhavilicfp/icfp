@@ -218,11 +218,12 @@ fn get_passable_neighbors(p: state::coord,
                        b: state::grid) -> ~[(state::coord, state::move)] {
     vec::filter(get_neighbors(p), |t| {
         let (l, _) = t;
+        b.in(l) &&
         alt get_square(l, b) {
           state::empty | state::earth |
           state::lambda { true }
           state::lift_o { true }
-          _ { false}
+          _ { false }
         }})
 }
 

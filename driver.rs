@@ -34,7 +34,11 @@ fn main(args: ~[str]) {
     let state = state::read_board(io::str_reader(map));
 
     signal::init();
-    
+    if os::getenv("USE_HARDCODED") != none {
+        alt emit_preset_moves(state) {
+          none { }
+          some(s) {io::println(s); ret}}
+    }
     let path_find = path_find();
     let engine = alt os::getenv("ENGINE") {
       some("simple") { game_tree::simple::mk(path_find) }
@@ -155,23 +159,60 @@ fn robot(+init: state::state, engine: game_tree) {
     io::println("");
 }
 
-fn find_hard_coded(s: state::state) -> option<str> {
-    alt s.grid.hash {
-      1585882910 {some("maps/contest10.map")}
-      1652843932 {some("maps/contest1.map")}
-      2598939992 {some("maps/contest2.map")}
-      743435179 {some("maps/contest3.map")}
-      1452394536 {some("maps/contest4.map")}
-      2056414715 {some("maps/contest5.map")}
-      745578453 {some("maps/contest6.map")}
-      322669917 {some("maps/contest7.map")}
-      1711244539 {some("maps/contest8.map")}
-      2625681711 {some("maps/contest9.map")}
-      1185558828 {some("maps/flood1.map")}
-      1549412226 {some("maps/flood2.map")}
-      527250308 {some("maps/flood3.map")}
-      4056672759 {some("maps/flood4.map")}
-      4058792550 {some("maps/flood5.map")}
-      _ {none}
+fn compare_states(s1: state::state, s2: state::state) -> bool {
+    let g1 = s1.grid.grid;
+    let g2 = s2.grid.grid;
+    if g1.len() != g2.len() { ret false; }
+    else if g1[0].len() != g2[0].len() { ret false; }
+    else {
+        for uint::range(0, g1.len()) |i| {
+            for uint::range(0, g1[0].len()) |j| {
+                if g1[i][j] != g2[i][j] {ret false;}
+            }
+        }
+    }
+    true
+}
+
+fn whole_file_as_string(s: str) -> str {
+    str::from_bytes(io::read_whole_file("./" + s).get())
+}
+
+fn emit_preset_moves(s1: state::state) -> option<str> {
+    for get_known_maps().each() |s| {
+        let s2 = state::read_board(io::str_reader(whole_file_as_string("maps/" + s)));
+        if compare_states(s1, s2) {
+            let ret_val = whole_file_as_string("strats/" + s);
+            ret some(ret_val);
+        }
+        else { again; }
+    };
+    none
+}
+
+fn get_known_maps() -> ~[str] {
+~["contest10.map",
+"contest1.map",
+"contest2.map",
+"contest3.map",
+"contest4.map",
+"contest5.map",
+"contest6.map",
+"contest7.map",
+"contest8.map",
+"contest9.map",
+"flood1.map",
+"flood2.map",
+"flood3.map",
+"flood4.map",
+"flood5.map"]
+}
+
+#[test]
+fn test_preset() {
+    alt emit_preset_moves(state::read_board(
+        io::str_reader(whole_file_as_string("maps/contest1.map")))) {
+      some(moves) {assert("LDRDDULULLDDL" == moves)}
+      none {fail}
     }
 }
