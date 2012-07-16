@@ -1,27 +1,26 @@
-Emarhavil Heavy Functional Programming
-======================================
+==== Emarhavil Heavy Functional Programming ====
+================================================
 
-ABOUT US
---------
+------------------
+---- ABOUT US ----
+------------------
 
 We're a team based in Mountain View, CA; we unite around the fact that we
 wish to try implementing an ICFP challenge in Mozilla's new experimental
-language, Rust [1].  Our explicit goals for this iteration of the
-competition are to 1) have fun, and 2) put Rust on the map, giving it a
-serious test of something other than the Rust compiler written in it.
+language, Rust [1] (version 0.3 of which was released just earlier this
+week). Our explicit goals for this iteration of the competition are to
+1) have fun, 2) put Rust on the map, and 3) give Rust a serious test by
+writing something in it other than the Rust compiler.
 
 We would like to thank the Mozilla Corporation for allowing us the use of
 their office space over the weekend (keeping the lights and AC on for us,
 and keeping us fed!).
 
-OUR LIGHTNING ROUND SUBMISSION
-------------------------------
+[1] http://www.rust-lang.org/
 
-We submit some mostly untested pathfinding code that might or might not
-work.
-
-TEAM MEMBERS
-------------
+----------------------
+---- TEAM MEMBERS ----
+----------------------
 
 (in no particular order ... just looking around the room)
 
@@ -31,9 +30,50 @@ Paul Stansifer (Northeastern University; Mozilla Corporation)
 Josiah Boning (Dropbox)
 Kevin Murphy (Carnegie Mellon University; NVIDIA)
 Ben Harris (NVIDIA)
-Roy Froystig (Stanford University)
+Roy Frostig (Stanford University)
 Zizhuang Yang (Facebook)
 Tony Fernandez (Carnegie Mellon University; Google)
 Eric Holk (Indiana University; Mozilla Corporation)
+Eric Faust (Carnegie Mellon University; Mozilla Corporation)
 
-[1] http://www.rust-lang.org/
+----------------------------------------
+---- OUR LIGHTNING ROUND SUBMISSION ----
+----------------------------------------
+
+We submit some mostly untested pathfinding code that might or might not
+work. Actually, we submitted nothing.
+
+------------------------------
+---- OUR FINAL SUBMISSION ----
+------------------------------
+
+In general, our solution is based on three components: a state space
+searcher for trying different possibilities, a pathing engine for getting
+from place to place, and a pattern-matching language for identifying how
+to get through hard spots.
+
+We have several different searchers and pathers, and we try all of them
+on each map, using Rust tasks (the built-in unit of parallelism). An
+"octopus" at the top level spawns and collects the results of each
+algorithm and chooses the highest-scoring one.
+
+GAME TREE SEARCH
+----------------
+
+All of our game tree searches are granular at the level of "paths between
+targets". A target is a lambda, an open lambda lift, a razor, a horock,
+etc (except we have no strategy code for razors and horocks).
+
+    GREEDY. 
+
+    ITERATIVE DEEPENING.
+
+    TOBRUOS.
+
+    CARGOMAX.
+
+PATHING
+-------
+
+PATTERNS
+--------
