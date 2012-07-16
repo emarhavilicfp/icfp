@@ -18,18 +18,26 @@ enum t {_dummy}
 impl of path_find for t {
     fn get_paths(s: state::state) ->
             (fn @() -> option<(state::state, path::path)>) {
-        let targets = map_mut(s.grid.lambdas(), |x| x);
-        let index = @mut 0;
-        fn @(copy s) -> option<(state::state, path::path)> {
-            if (targets.len() == *index) {
-                ret none;
+
+        let targets = dlist::create::<(uint, state::coord)>();
+        for s.grid.lambdas().each |target| {
+            pqins(targets, target, state::taxicab_distance(s.robotpos, target));
+        }
+
+        fn @() -> option<(state::state, path::path)> {
+            loop {
+                if (targets.is_empty()) {
+                    ret none;
+                }
+
+                let (_, (x, y)) = option::unwrap(targets.pop());
+                let result = navigar(s, (x, y));
+                if (result.is_none()) {
+                    again;
+                }
+
+                ret result;
             }
-
-            let mut dest = (0,0);
-            dest <-> targets[*index];
-            *index += 1;
-
-            navigar(s, dest)
         }
     }
 }
@@ -48,9 +56,9 @@ pure fn map_mut<T, U>(v: &[T], f: fn(T) -> U) -> ~[mut U] {
 }
 
 type astarhelp = (state::coord, state::move, path::path, uint);
-type pq = dlist::dlist<(uint, astarhelp)>;
+type pq<T> = dlist::dlist<(uint, T)>;
 
-fn pqins(pq: pq, troll: astarhelp, prio: uint) {
+fn pqins<T: copy>(pq: pq<T>, troll: T, prio: uint) {
     let mut link = pq.peek_n();
     while link.is_some() {
         let neighbor = link.get();
@@ -130,6 +138,7 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
     let mut visited = map::hashmap(mk_hasher(s), eqcoord);
     let mut pq = dlist::create::<(uint, astarhelp)>();
     let cost = mk_cost(s);
+    pqins(pq, (s.robotpos, state::W, ~[], 0), 1);
 
     while (!pq.is_empty()) {
         let mut (_, (spot, m, path, oldcost)) = option::unwrap(pq.pop());
@@ -139,7 +148,6 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
 
         vec::push(path, m);
         if (spot == dest) {
-            
             let mut newstate = state_apply(s, path);
             if (newstate.is_some()) {
                 ret some((option::unwrap(newstate), path));
@@ -150,7 +158,7 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
                     ret some((option::unwrap(newstate), path));
                 }
             }
-            ret none;
+            again;
         }
 
         map::set_add(visited, spot);
@@ -186,4 +194,15 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
         }
     }
     ret none;
+}
+
+#[test]
+fn test_pull_my_thunk() {
+    let state = state::read_board(io::str_reader(#include_str("../maps/contest1.map")));
+    let count = state.lambdasleft;
+    let astar = mk();
+    let thunk = astar.get_paths(state);
+    let mut i = 1;
+    while(thunk().is_some()) {
+    }
 }
