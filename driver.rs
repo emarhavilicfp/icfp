@@ -36,9 +36,9 @@ fn main(args: ~[str]) {
       some("simple") { game_tree::simple::mk(path_find) }
       some("tobruos") { game_tree::tobruos::mk(path_find) }
       _ {
-        game_tree::bblum::mk({
+        game_tree::cargomax::mk({
           path_find: path_find
-          with game_tree::bblum::default_opts()})
+          with game_tree::cargomax::default_opts()})
       }
     };
 
