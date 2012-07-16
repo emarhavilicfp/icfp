@@ -59,7 +59,7 @@ class octopus : game_tree {
                     razors: ra,
                     lambdas: la,
                     lambdasleft: lam,
-                    score: sc
+                    mut score: sc
                 }
             };
 
@@ -69,7 +69,7 @@ class octopus : game_tree {
                 let path = engine.get_path(copy g);
                 // ???: should strict be true instead of false here?
                 let score = alt path::apply(path, g, false) {
-                  state::endgame(score) { score }
+                  state::endgame(_, score) { score }
                   state::stepped(@some(s)) { s.score }
                   state::oops(@s) { s.score }
                   _ {
