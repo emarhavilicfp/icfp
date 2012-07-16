@@ -411,6 +411,7 @@ fn read_board(+in: io::reader) -> state {
     while (!in.eof()) {
         let line = in.read_line();
         let split = str::split_char_nonempty(line, ' ');
+        if split.len() == 0 { again };
         alt (split[0]) {
             "Water" { water = option::get(uint::from_str(split[1])); }
             "Flooding" { flooding = option::get(int::from_str(split[1])); }
