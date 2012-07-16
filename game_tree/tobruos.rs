@@ -99,7 +99,7 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(
                     vec::push(paththunks, opts.path_find.get_paths(news)); 
                 }
                 let newseval = evaluate(news);
-                scores = scores + evaluate(news) as i64;
+                scores = scores + newseval as i64;
                 paths = paths + 1;
                 
                 if newseval as i64 > bestlocal { /* Then you know what I'm sayin'! */
