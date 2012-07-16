@@ -36,6 +36,7 @@ mod path_find {
 mod game_tree;
 mod game_tree {
     mod bblum;
+    mod cargomax;
     mod simple;
     mod tobruos;
 }

@@ -15,6 +15,7 @@ ICFP_SRC = icfp.rc \
 	   heuristics.rs \
 	   path_find.rs path_find/brushfire.rs path_find/precise.rs path_find/astar.rs \
 	   game_tree.rs game_tree/bblum.rs game_tree/simple.rs game_tree/tobruos.rs \
+	   game_tree/cargomax.rs \
 	   fuzzer.rs \
 	   testseq.rc \
 	   testseq_driver.rs

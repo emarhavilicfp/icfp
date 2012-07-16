@@ -21,3 +21,8 @@ A common idiom is "while x.is_some() { x.get() .. x = ..; }". Encapsulate?
 I have nothing to add.
 ...oh, I do. Even with #[warn(no_implicit_copys)] at the top of the function,
 it still warns.
+dlist pop shouldn't require copy. do unsafe if needed
+dlist from_elt -> from_elem
+vec pop should fail ever
+dvec len pure
+os::exit no exist
