@@ -2,6 +2,17 @@ import io::reader_util;
 import game_tree::game_tree;
 import str;
 
+import game_tree::octopus::octopus;
+
+fn path_find() -> path_find::path_find {
+    alt os::getenv("PATHFIND") {
+      some("astar") { path_find::astar::mk() }
+      _ {
+        path_find::brushfire::mk()
+      }
+    }
+}
+
 fn main(args: ~[str]) {
     import result::*;
     
@@ -24,17 +35,30 @@ fn main(args: ~[str]) {
 
     signal::init();
     
-    let path_find = alt os::getenv("PATHFIND") {
-      some("astar") { path_find::astar::mk() }
-      _ {
-        //path_find::precise::mk(
-          path_find::brushfire::mk()
-        //)
-      }
-    };
+    let path_find = path_find();
     let engine = alt os::getenv("ENGINE") {
       some("simple") { game_tree::simple::mk(path_find) }
       some("tobruos") { game_tree::tobruos::mk(path_find) }
+      some("octopus") {
+        game_tree::octopus::octopus(~[
+            fn~() -> game_tree::game_tree {
+                game_tree::simple::mk(driver::path_find())
+            },
+            fn~() -> game_tree::game_tree {
+                game_tree::tobruos::mk(driver::path_find())
+            },
+            fn~() -> game_tree::game_tree {
+                game_tree::bblum::mk({
+                    path_find: driver::path_find()
+                    with game_tree::bblum::default_opts()})
+            },
+            fn~() -> game_tree::game_tree {
+                game_tree::cargomax::mk({
+                    path_find: driver::path_find()
+                    with game_tree::cargomax::default_opts()})
+            },
+        ]) as game_tree::game_tree
+      }
       _ {
         game_tree::cargomax::mk({
           path_find: path_find
