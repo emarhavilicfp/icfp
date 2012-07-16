@@ -302,7 +302,7 @@ fn run_workqueue(-s: state::state, o: search_opts) -> cargomax {
     while !worklist.is_empty() && !(signal::signal_received() && o.killable) {
         let work: work = worklist.pop().get();
         //#error["CARGOMAX: Processing work @ depth %u with estimated score %d",
-               work.prefix.len() + work.suffix.len(), work.eval];
+               //work.prefix.len() + work.suffix.len(), work.eval];
         let result = process_work(copy s, work, o);
         if (score_result(result) > score_result(best_result)) {
             //#error["CARGOMAX: Found new best %d", score_result(result)];
@@ -313,7 +313,7 @@ fn run_workqueue(-s: state::state, o: search_opts) -> cargomax {
         if worklist.is_empty() {
             worklist <-> o.work_list;
             //#error["CARGOMAX: Advancing depth; best so far %d",
-                   score_result(best_result)];
+                   //score_result(best_result)];
         }
     }
     best_result
