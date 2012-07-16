@@ -20,23 +20,10 @@ mod pattern;
 
 mod path;
 
-mod evaluate;
 mod dlist;
 
 mod fuzzer;
 mod heuristics;
-
-mod path_find;
-mod path_find {
-    mod brushfire;
-}
-
-mod game_tree;
-mod game_tree {
-    mod bblum;
-    mod simple;
-    mod tobruos;
-}
 
 mod signal;
 
