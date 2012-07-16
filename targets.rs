@@ -19,12 +19,50 @@ trait target {
     pure fn traverse() -> (coord, path);
 }
 
+enum viaThing {
+    Pattern(coord, pattern::pat),
+    Trampoline(coord, coord)
+}
+
 enum gotoThing {
     Lambda(coord),
     Razor(coord),
     OpenLift(coord),
-    Pattern(coord, pattern::pat),
+   }
+
+
+impl of target for viaThing {
+    pure fn coord() -> coord {
+        alt self {
+        Pattern(l,_) { l }
+        Trampoline(l,_) { l }
+    }}
+
+    fn score() -> int { 
+        alt self {
+        Pattern(_,pat) { let c = pat.cost as int; -c }
+        Trampoline(*) { let c = 250; -c }
+    }}
+   
+    pure fn traverse() -> (coord, path) {
+      alt self {
+        Pattern(c,p) { 
+            let (x,y) = c;
+            let finPos = (x + p.off_c_dest, y - p.off_r_dest);
+            (finPos, p.cmd)
+        }
+        Trampoline(c,t) {
+            let (cx, cy) = c;
+            let cxi = cx as int;
+            let cyi = cy as int;
+            let (tx, ty) = t;
+            let txi = tx as int;
+            let tyi = ty as int;
+            (t, ~[state::Tramp(txi-cxi, tyi-cyi)])
+        }
+    }}
 }
+
 
 impl of target for gotoThing {
     pure fn coord() -> coord {
@@ -32,7 +70,6 @@ impl of target for gotoThing {
             Lambda(l) { l }
             Razor(l) { l }
             OpenLift(l) { l }
-            Pattern(l,_) { l }
         }
     }
 
@@ -48,7 +85,6 @@ impl of target for gotoThing {
                         }}) * 10
             }*/ { /* XXX */ 5 }
             OpenLift(_) { 9999 }
-            Pattern(_,pat) { let c = pat.cost as int; -c }
         }
     }
 
@@ -57,11 +93,6 @@ impl of target for gotoThing {
             Lambda(c) { (c, ~[]) }
             Razor(c) { (c, ~[]) }
             OpenLift(c) { (c, ~[]) }
-            Pattern(c,p) { 
-                let (x,y) = c;
-                let finPos = (x + p.off_c_dest, y + p.off_r_dest);
-                (finPos, p.cmd)
-            }
-        }
+           }
     }
 }

@@ -81,7 +81,7 @@ type state = {
 };
 
 enum move {
-    U, D, L, R, W, A, S
+    U, D, L, R, W, A, S, Tramp(int, int)
 }
 
 impl extensions for square {
@@ -161,31 +161,55 @@ impl extensions for grid {
         self.grid[y-1][x-1] = s;
         self.hash ^= self.keys.get(c, self.at(c));
     }
-    
-    fn lambdas() -> ~[targets::gotoThing] {
-        fn makeTarget(sq: square, co: coord) -> targets::gotoThing {
-            alt sq {
-                lambda { ret targets::Lambda(co) }
-                razor { ret targets::Razor(co) }
-                lift_o { ret targets::OpenLift(co) }
-                _ { fail }
+   
+    fn vias() -> ~[targets::viaThing] {
+          let mut vias = self.foldl(
+            ~[],
+            fn @(l: ~[targets::viaThing], sq: square, co: coord) ->
+            ~[targets::viaThing]
+            {
+                alt sq {
+                     trampoline(n) {
+                     let targCoord = self.foldl(none,
+                        |o, s, c| {
+                            if o.is_none() {
+                                alt s {
+                                    target(n2) { if n == n2 { some(c) } else {none}}
+                                    _ {none}}} else { o }}).expect("trampoline with no
+                                    target");
+                    let tramp = targets::Trampoline(co, targCoord);
+
+                    vec::append_one(l, tramp)
+                } _ { l }}
+            });
+             let pats = pattern::get_patterns();
+            let matches = pattern::matched_pats(self, pats);
+            for matches.each() |pat|{
+                let (c,p) = pat;
+                vec::append_one(vias, targets::Pattern(c, *p));
             }
-        }
-        let mut dests = self.foldl(
+            vias
+    }
+
+
+
+    fn lambdas() -> ~[targets::gotoThing] {
+        let makeTarget = |sq: square, co: coord| -> targets::gotoThing {
+            alt sq {
+                lambda { targets::Lambda(co) }
+                razor { targets::Razor(co) }
+                lift_o { targets::OpenLift(co) }
+                               _ { fail }
+            }
+        };
+        self.foldl(
             ~[],
             fn @(l: ~[targets::gotoThing], sq: square, co: coord) -> ~[targets::gotoThing]
             {
                 if sq == lambda || sq == lift_o || sq == razor {
                     vec::append_one(l, makeTarget(sq, co))
                 } else { l }
-            });
-        let pats = pattern::get_patterns();
-        let matches = pattern::matched_pats(self, pats);
-        for matches.each() |pat|{
-            let (c,p) = pat;
-            vec::append_one(dests, targets::Pattern(c, *p));
-        }
-        dests
+            })
     }
 
     fn rehash() -> hash_val {
@@ -280,6 +304,7 @@ impl of to_str::to_str for move {
             A { "A" }
             W { "W" }
             S { "S" }
+            Tramp(*) { "Tramp" } // XXX
         }
     }
 }
@@ -555,6 +580,10 @@ impl extensions for state {
           D { (x, y-1) }
           W { (x, y) }
           S { (x, y) }
+          Tramp(dx, dy) { 
+            let newX = x as int + dx;
+            let newY = y as int + dy;
+            (newX as uint, newY as uint) }
           A { /* Abort!  Abort! */
             ret endgame(score_ + self.lambdas * lambda_score)
           }

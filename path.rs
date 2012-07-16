@@ -8,6 +8,7 @@ import dvec;
 import vec;
 import vec::extensions;
 import targets::target;
+import targets::viaThing;
 
 type boundary_element = (state::coord, ~[state::move]);
 type path_state = (~[~[mut (bool, ~[state::move])]], ~[boundary_element]);
@@ -66,7 +67,7 @@ fn apply(p: path, +st: state::state, strict: bool) -> state::step_result {
 }
 
 fn genpaths<T: copy target>(b: state::grid, src: state::coord,
-             dests: &[const option<T>],
+             targets: &[const option<T>], vias:&[mut option<viaThing>],
              safe: bool)
              -> (option<(path, T)>, path_state) {
     let (x, y) = src;
@@ -77,13 +78,13 @@ fn genpaths<T: copy target>(b: state::grid, src: state::coord,
     visited[y-1][x-1] = (true, ~[state::W]);
     //let mut condition: option<state::coord> = none;
     let mut boundary = ~[(src, ~[state::W])];
-    genpath_restart(b, src, dests, visited, boundary, safe)
+    genpath_restart(b, src, targets, vias, visited, boundary, safe)
 
 }
 
 fn genpath_restart<T: copy target>
     (b: state::grid, src: state::coord,
-     dests: &[const option<T>],
+     dests: &[const option<T>], vias: &[mut option<viaThing>],
      +v: ~[~[mut (bool, ~[state::move])]],
      bound: ~[boundary_element],
      safe: bool)
@@ -95,7 +96,7 @@ fn genpath_restart<T: copy target>
     visited[y-1][x-1] = (true, ~[state::W]);
     let mut condition = none;
     while condition == none {
-        boundary = propagate(b, boundary, visited, safe);
+        boundary = propagate(b, boundary, visited, vias, safe);
         condition = winner(dests, visited);
         if (boundary.len() == 0) {
             //shit's fucked (no reachable)
@@ -104,7 +105,7 @@ fn genpath_restart<T: copy target>
     }
     alt copy condition {
       some(i) {
-        let p = option::get(dests[i])
+        let p = option::get(dests[i]);
         let (c,path) = p.traverse();
         let nubPath = build_path(p, visited);
         let finalPath = vec::append(nubPath, path);
@@ -148,6 +149,7 @@ fn invert_move(m: state::move) -> state::move {
       state::D {state::U}
       state::L {state::R}
       state::R {state::L}
+      state::Tramp(x,y) {state::Tramp(-x,-y)}
       // This last one shouldn't happen.
       x        {x}
     }
@@ -181,7 +183,8 @@ fn winner<T: target>(dests: &[const option<T>],
 }
 
 fn propagate(b: state::grid, boundary_list: ~[boundary_element],
-             visited: ~[~[mut (bool, ~[state::move])]], safe: bool)
+             visited: ~[~[mut (bool, ~[state::move])]], 
+             vias: &[mut option<viaThing>], safe: bool)
     -> ~[boundary_element]
 {
     let mut ret_list: ~[boundary_element] = ~[];
@@ -192,8 +195,29 @@ fn propagate(b: state::grid, boundary_list: ~[boundary_element],
             let (x, y) = neighbor;
             let (cond, _moves) = visited[y-1][x-1];
             if !cond {
-                ret_list += ~[(neighbor, ~[m])];
+                let mut got_one: bool = false;
                 visited[y-1][x-1] = (true, ~[m]);
+                if !safe {
+                    for vias.eachi() |i, o| {
+                        alt o{
+                          some(via) {
+                            if via.coord() == neighbor {
+                                let (c, m) = via.traverse();
+                                let (x2, y2) = c;
+                                visited[y2 -1][x2 -1] = (true, m);
+                                vias[i] = none;
+                                ret_list += ~[(c, m)];
+                                got_one = true;
+                                break;
+                            }
+                          }
+                          none { again; }
+                        }
+                    }
+                }
+                if !got_one {
+                    ret_list += ~[(neighbor, ~[m])];
+                }
             }
         }
     }
@@ -212,8 +236,9 @@ fn get_passable_neighbors(p: state::coord,
     vec::filter(get_neighbors(p), |t| {
         let (l, _) = t;
         alt get_square(l, b) {
-          state::empty | state::lambda | state::razor { true }
-          state::earth {
+          state::lambda | state::razor { true }
+          state::target(fuck) { true }
+          state::earth | state::empty {
             let upCoord = l.up();
             if b.in(upCoord) {
                 alt get_square(upCoord, b) {
@@ -223,7 +248,6 @@ fn get_passable_neighbors(p: state::coord,
             } else { true }
           }
           state::trampoline(fuck) { !safe }
-          state::target(fuck) { !safe /* rock might fall */ }
           _ { false }
         }})
 }

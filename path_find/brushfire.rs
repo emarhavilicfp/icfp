@@ -6,6 +6,7 @@ import state;
 import state::extensions;
 import heuristics::*;
 import targets::gotoThing;
+import targets::viaThing;
 
 import targets::target;
 
@@ -23,7 +24,8 @@ impl of path_find for t {
 // TODO: Contain the game state by using a region pointer.
 type bblums_pathlist = {
     pathstate: (@mut option<brushfire>, @mut option<brushfire>),
-    targets: ~[mut option<targets::gotoThing>]
+    targets: ~[mut option<targets::gotoThing>], 
+    vias: ~[mut option<viaThing>]
 };
 
 fn mk() -> path_find {
@@ -33,8 +35,9 @@ fn mk() -> path_find {
 
 fn mk_iter(s: state::state) -> bblums_pathlist {
     let t = map_mut(s.grid.lambdas(), |x| some(x));
+    let v = map_mut(s.grid.vias(), |x| some(x));
     let state: bblums_pathlist =
-        { pathstate: (@mut none, @mut none), targets: t };
+        { pathstate: (@mut none, @mut none), targets: t, vias: v };
     state
 }
 
@@ -69,12 +72,12 @@ pure fn map_mut<T, U>(v: &[T], f: fn(T) -> U) -> ~[mut U] {
 // Unsafety is defined as moves that cause side effects, such as
 // dislodging a boulder.
 fn path_easy(s: state::state, fire: @mut option<brushfire>,
-             targets: &[mut option<gotoThing>]) -> option<path::path> {
-    do_pathing(s,fire,targets, true)
+             targets:&[mut option<gotoThing>], vias:&[mut option<viaThing>]) -> option<path::path> {
+    do_pathing(s,fire,targets,vias, true)
 }
 
 fn do_pathing(s: state::state, fire: @mut option<brushfire>,
-              targets: &[mut option<gotoThing>], safe: bool)
+              targets: &[mut option<gotoThing>], vias: &[mut option<viaThing>], safe: bool)
     -> option<path::path>
 {
     // Sets a slot in the targets list to 'none'
@@ -103,11 +106,11 @@ fn do_pathing(s: state::state, fire: @mut option<brushfire>,
         let (shit1, shit2) = option::unwrap(shit);
         // Get path and new state
         let (pathres, stateres) =
-            path::genpath_restart(s.grid, s.robotpos, targets, shit1, shit2, true);
+            path::genpath_restart(s.grid, s.robotpos, targets, vias, shit1, shit2, safe);
         *fire = some(stateres);
         process_pathres(pathres, targets)
     } else {
-        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets, true);
+        let (pathres, stateres) = path::genpaths(s.grid, s.robotpos, targets, vias, safe);
         *fire = some(stateres);
         process_pathres(pathres, targets)
     }
@@ -115,10 +118,10 @@ fn do_pathing(s: state::state, fire: @mut option<brushfire>,
 }
 
 fn path_aggressive(s: state::state, fire: @mut option<brushfire>,
-                   targets: &[mut option<gotoThing>])
+                   targets: &[mut option<gotoThing>], vias: &[mut option<viaThing>])
     -> option<path::path>
 {
-    do_pathing(s, fire, targets, false)
+    do_pathing(s, fire, targets, vias, false)
 }
 
 /****************************************************************************
@@ -129,8 +132,8 @@ fn path_aggressive(s: state::state, fire: @mut option<brushfire>,
 fn get_next_lambda(s: state::state, bblum: bblums_pathlist)
         -> option<(state::state,path::path)> {
     let (easy_state,aggr_state) = bblum.pathstate;;
-    let mut easy = path_easy(s, easy_state, bblum.targets);
-    let mut aggressive = path_aggressive(s, aggr_state, bblum.targets);
+    let mut easy = path_easy(s, easy_state, bblum.targets, bblum.vias);
+    let mut aggressive = path_aggressive(s, aggr_state, bblum.targets, bblum.vias);
 
     // Diamonds are forever.
     loop {
@@ -149,7 +152,7 @@ fn get_next_lambda(s: state::state, bblum: bblums_pathlist)
             if newstate.is_some() {
                 ret some((option::unwrap(newstate), try_path)); // Satisfied!
             } else {
-                aggressive = path_aggressive(s, aggr_state, bblum.targets);
+                aggressive = path_aggressive(s, aggr_state, bblum.targets, bblum.vias);
                 again;
             }
         } else {
@@ -159,7 +162,7 @@ fn get_next_lambda(s: state::state, bblum: bblums_pathlist)
             if newstate.is_some() {
                 ret some((option::unwrap(newstate), try_path)); // Satisfied!
             } else {
-                easy = path_easy(s, easy_state, bblum.targets);
+                easy = path_easy(s, easy_state, bblum.targets, bblum.vias);
                 again;
             }
         }
