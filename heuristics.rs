@@ -15,7 +15,7 @@ const bird_in_hand_multiplier: int = 1000;
 const worklist_bufsize: uint = 1048576;
 const worklist_sorted: bool = false;
 
-fn cargomax_munge_avg_depth(avg: uint) -> uint { avg/5 }
+fn cargomax_munge_avg_depth(avg: uint) -> uint { avg }
 
 // move ordering (trivial)
 // water check in trans table
