@@ -2,7 +2,7 @@
 ==== Emarhavil Heavy Functional Programming ====
 ================================================
 
-"ICFPC 2012: Gathering: the Lambda."
+"ICFPC 2012: Gathering: the Lambdas."
 
 ------------------
 ---- ABOUT US ----
@@ -132,19 +132,23 @@ path length of all greedy-finishes, then trim it by a heuristic constant
 (cargomax_munge_avg_depth). Then on each branch we find the maximum point
 between the start and that depth, i.e.:
 
-      _ 1 2 3 4 5* 4 3 2
-     /
-    /__ 9* 8 7 6 1 0 0
-    \
-     \_ 1 1 3 5 
+                 _ 1 2 3 4 5* 4 3 2|. . . . .|.         A
+                /                  |         |
+...(prefix)... /__ 9* 8 7 6 1 0 0 0|. . .    |          B
+               \                   |         |
+                \_ 1 1 3 5 8 13 21 |* . . . .|. . . . . C
+                                trimmed     avg
+
+Here we add three items to the workqueue: {prefix + A's-moves-up-to-5},
+{prefix + B's first move only}, {prefix + C's-moves-up-to-trimmed}.
 
 "Cargomax" is a five-way pun.
  - "Cargo" alludes to carrying lambdas around.
  - "Cargo" is Rust's build system (and "crates" are compilation units).
  - "Max", a generic search algorithm name.
  - "Cargofax" is the name of our test arena.
- - "Vargomax" - see http://www.youtube.com/watch?v=HhGI-GqAK9c (created
-   by one of our friends over on the Cult of the Bound Variable team)
+ - "Vargomax" - see https://www.cs.cmu.edu/~tom7/sigbovik/mario3.swf
+   (created by a friends over on the Cult of the Bound Variable team)
 
 PATHING
 -------
