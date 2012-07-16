@@ -19,7 +19,7 @@ ICFP_SRC = icfp.rc \
 	   fuzzer.rs \
 	   testseq.rc \
 	   testseq_driver.rs \
-       octopus.rs \
+       game_tree/octopus.rs \
 
 # Remember to add modules for your .rs files in icfp.rc too!
 ifeq ($(MODE),dynamic)

@@ -125,6 +125,7 @@ fn search(-s: state::state, depth: uint, o: search_opts) -> search_result {
                 // No targets found, huh?
                 break;
             }
+            task::yield();
         }
         // Process best_moves and best_score.
         if best.is_some() {
@@ -159,6 +160,7 @@ fn iterative_search(-s: state::state, o: search_opts) -> search_result {
             #error["SEARCH: Worse..?"];
         }
         depth += 1;
+        task::yield();
     }
     best_result
 }

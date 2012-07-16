@@ -33,6 +33,7 @@ fn get_path(opts: settings, +s: state::state) -> ~[state::move] {
         }
         #debug["tobruos: depth %u done; best score %d (this: %d)", depth, bestscore, score];
         depth = depth+1;
+        task::yield();
     }
     
     bestpath
@@ -53,6 +54,7 @@ fn get_path_depth(opts: settings, +s: state::state, depth: uint) -> (~[state::mo
         fullpath = vec::append(fullpath, path);
         #debug["tobruos:    came back with a best score of %d, path length of %u", state.score, fullpath.len()];
         state = newst;
+        task::yield();
     }
     (fullpath, state.score)
 }

@@ -19,6 +19,7 @@ impl of game_tree for settings {
         while result != none {
             let (newstate, path) = option::unwrap(result);
             fullpath = vec::append(fullpath, path);
+            task::yield();
             result = self.path_find.get_paths(newstate)()
         }
         fullpath

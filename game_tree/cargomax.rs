@@ -291,6 +291,7 @@ fn process_work(-s_: state::state, w: work, o: search_opts) -> cargomax {
     }
     let result = search_horizon(option::unwrap(s), o);
     o.move_stack = @dvec::dvec();
+    task::yield();
     (result,(w.prefix,w.suffix))
 }
 

@@ -70,7 +70,12 @@ class octopus : game_tree {
                 // ???: should strict be true instead of false here?
                 let score = alt path::apply(path, g, false) {
                   state::endgame(score) { score }
-                  _ { fail "this did not step to an endgame" }
+                  state::stepped(@some(s)) { s.score }
+                  state::oops(@s) { s.score }
+                  _ {
+                    #error("I don't know what to do with this state");
+                    int::min_value
+                  }
                 };
                 
                 (score, path)
