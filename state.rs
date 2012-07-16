@@ -87,7 +87,7 @@ type state = {
     razors: int,
     lambdas: int, /* how many lambdas we have collected */
     lambdasleft: int, /* how many lambdas we have left */
-    score: int,
+    mut score: int,
     /* We probably need a list of rocks here. */
 };
 
@@ -550,13 +550,13 @@ fn read_board(+in: io::reader) -> state {
         razors: razors,
         lambdas: 0,
         lambdasleft: lambdasleft_,
-        score: 0,
+        mut score: 0,
     }
 }
 
 enum step_result {
     stepped(@mut option<state>),
-    endgame(int), /* points */
+    endgame(@state, int), /* points */
     oops(@state) /* accidental death or illegal move */
 }
 
@@ -591,7 +591,10 @@ impl extensions for state {
           W { (x, y) }
           S { (x, y) }
           A { /* Abort!  Abort! */
-            ret endgame(score_ + self.lambdas * lambda_score)
+            self.score = score_ + self.lambdas * lambda_score;
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
+            ret endgame(@copy self, self.score)
           }
         };
 
@@ -606,7 +609,11 @@ impl extensions for state {
             (xp, yp)
           }
           lift_o { /* We've won -- ILHoist.hoist away! */
-            ret endgame(score_ + self.lambdas * 50)
+            self.score = score_ + self.lambdas * 50;
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
+            self.grid.set((xp, yp), bot);
+            ret endgame(@copy self, self.score)
           }
           rock | horock {
             if xp == x + 1 && yp == y &&
@@ -777,18 +784,25 @@ impl extensions for state {
         
         if underwater_ > self.waterproof {
             if strict { ret oops(@copy self); }
-            ret endgame(score_);
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
+            ret endgame(@copy self, score_);
         }
 
         /* Have we won? */
         if grid_.at((x_, y_)) == lift_o {
-            ret endgame(score_ + lambdas_ * 50);
+            self.score = score_ + lambdas_ * 50;
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
+            ret endgame(@copy self, self.score);
         }
 
         /* Check to see if rocks fall *after* we could have successfully taken the lambda lift. */
         if *rocks_fall {
             if strict { ret oops(@copy self); }
-            ret endgame(score_);
+            /* there en't no targets left */
+            do self.grid.squares_i |_s, c| { self.grid.set(c, wall) }
+            ret endgame(@copy self, score_);
         }
 
         /* Here we go! */
@@ -809,7 +823,7 @@ impl extensions for state {
             razors: razors_,
             lambdas: lambdas_,
             lambdasleft: lambdasleft_,
-            score: score_
+            mut score: score_
         }));
     }
 

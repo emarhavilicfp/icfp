@@ -136,11 +136,7 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
     fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
         alt path::apply(_ml, _s, false) {
             state::stepped(state) { some(state::extract_step_result(state)) }
-            state::endgame(score) { 
-                let end = {score: score with _s};
-                do end.grid.squares_i |__s, c| { end.grid.set(c, state::wall) }
-                ret some(end);
-            }
+            state::endgame(st, _) { some(*st) }
             state::oops(_) { none } // XXX fix endgame
         }
     }
