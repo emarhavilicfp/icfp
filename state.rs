@@ -195,7 +195,10 @@ impl extensions for grid {
             ~[],
             fn @(l: ~[coord], sq: square, co: coord) -> ~[coord]
             {
-                if sq == lambda || sq == lift_o{
+                // We spend a lot of time here, and calling into shape
+                // glue is slow.
+                if sq.to_uint() == lambda.to_uint()
+                    || sq.to_uint() == lift_o.to_uint() {
                     vec::append_one(l, co)
                 } else { l }
             })

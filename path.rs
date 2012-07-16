@@ -87,7 +87,9 @@ fn genpaths<T: copy target>(b: state::grid, src: state::coord,
              -> (option<(path, T)>, path_state) {
     let (x, y) = src;
     let mut visited: ~[~[mut(bool, ~[state::move])]] = ~[];
-    for iter::repeat(b.grid.len()) {
+    vec::reserve(visited, b.grid[0].len());
+    for uint::range(0, b.grid.len()) |_i| { // range gets inlined,
+                                            // repeat doesn't.
         vec::push(visited, vec::from_elem(b.grid[0].len(), (false, ~[])));
     }
     visited[y-1][x-1] = (true, ~[state::W]);
