@@ -221,6 +221,7 @@ fn get_passable_neighbors(p: state::coord,
         alt get_square(l, b) {
           state::empty | state::earth |
           state::lambda { true }
+          state::lift_o { true }
           _ { false}
         }})
 }
