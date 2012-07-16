@@ -1,2 +1,2 @@
 #!/bin/bash
-COMPETITION=1 LD_LIBRARY_PATH=$(dirname "$0")/lib $(dirname "$0")/icfp "$@"
+COMPETITION=1 PATHFIND=astar ENGINE=octopus LD_LIBRARY_PATH=$(dirname "$0")/lib $(dirname "$0")/icfp "$@"
