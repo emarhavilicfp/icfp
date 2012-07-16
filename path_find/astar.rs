@@ -90,26 +90,43 @@ fn pqins<T: copy>(pq: pq<T>, troll: T, prio: uint) {
 fn navigar(s: state::state, dest: state::coord, patmap: map::hashmap<state::coord, @pattern::pat>)
            -> option<(state::state, path::path)> {
     fn mk_cost(s: state::state) -> (fn@(state::coord, state::coord, state::move) -> uint) {
+        let w = s.grid.grid[0].len();
         let h = s.grid.grid.len();
         fn @(a:state::coord, b:state::coord, m:state::move, copy s) -> uint {
-            let mut c;
-            /* TODO lift this somewhere and better heuristics */
-            alt s.grid.at(b) {
-                state::earth |
-                state::empty { c = 5 }
-                state::razor { c = 4 }
-                state::lambda { c = 3 }
-                state::lift_o { ret 1; }
-                _ { ret 0; }
+            fn passable(b:state::coord, s:state::state) -> uint {
+                let c;
+                alt s.grid.at(b) {
+                    state::earth |
+                    state::empty { c = 5 }
+                    state::razor { c = 4 }
+                    state::lambda { c = 3 }
+                    state::lift_o { ret 1; }
+                    _ { ret 0; }
+                }
+                c
             }
+
+            let mut c = passable(b, s);
+
+            /* TODO lift this somewhere and better heuristics */
 
             let (ax, ay) = a;
             if (ay < h &&
                 s.grid.at((ax, ay + 1)) == state::rock) {
                 /* We are moving out from under a boulder */
                 alt m {
-                    state::D { /*Death*/ret 0; }
-                    _ { c += 5; }
+                    state::D { ret 0; }
+                    state::L |
+                    state::R {
+                        let (bx, by) = b;
+                        if (s.grid.at((bx, by + 1)) == state::rock &&
+                            (bx > 1 && bx < w) &&
+                            passable((bx + 1, by), s) == 0 &&
+                            passable((bx - 1, by), s) == 0) {
+                            ret 0;
+                        }
+                    }
+                    _ { }
                 }
             }
 
@@ -207,21 +224,38 @@ fn navigar(s: state::state, dest: state::coord, patmap: map::hashmap<state::coor
                     for pat.cmd.each |cmd| {
                         vec::push(pathnext, copy cmd);
                     }
-                    for pathnext.each |cmd| {
-                        pqins(pq, (n, some(cmd), accum, oldcost), oldcost);
-                        vec::push(accum, cmd);
+                    let mut lastpos = spot_;
+                    let mut goahead = true;
+                    //for pathnext.each |cmd| {
+                    //    let tempcost = cost(lastpos, lastpos.move(cmd), cmd);
+                    //    if (tempcost == 0) {
+                    //        goahead = false;
+                    //        break;
+                    //    }
+                    //    lastpos = lastpos.move(cmd);
+                    //}
+                    if goahead {
+                        for pathnext.each |cmd| {
+                            let tempcost = cost(spot_, n, m_);
+                            if (tempcost != 0) {
+                                again;
+                            }
+                            pqins(pq, (n, some(cmd), accum, oldcost), oldcost);
+                            vec::push(accum, cmd);
+                        }
+                        again;
                     }
                 }
                 none {
-                    let tempcost = cost(spot_, n, m_);
-                    if (tempcost == 0) {
-                        again;
-                    }
-
-                    let newcost = oldcost + tempcost;
-                    pqins(pq, (n, some(m_), path, newcost), newcost);
                 }
             }
+            let tempcost = cost(spot_, n, m_);
+            if (tempcost == 0) {
+                again;
+            }
+
+            let newcost = oldcost + tempcost;
+            pqins(pq, (n, some(m_), path, newcost), newcost + distance(s.robotpos, spot_));
         }
     }
     ret none;
