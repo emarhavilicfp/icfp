@@ -319,7 +319,7 @@ impl of to_str::to_str for move {
     }
 }
 
-impl of to_str::to_str for &[move] {
+impl/& of to_str::to_str for &[move] {
     fn to_str() -> str {
         let mut s = "";
         for self.each |m| {
