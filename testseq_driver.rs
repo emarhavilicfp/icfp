@@ -35,7 +35,7 @@ fn main(args: ~[str]) {
         
         alt state.step(move, false) {
           state::stepped(s) { state = state::extract_step_result(s); }
-          state::endgame(_, points) {
+          state::endgame(points) {
             io::print(#fmt("%d", points));
             libc::exit(0)
           }
@@ -44,7 +44,7 @@ fn main(args: ~[str]) {
     }
     
     alt state.step(state::A, false) {
-      state::endgame(_, points) { io::print(#fmt("%d", points)); }
+      state::endgame(points) { io::print(#fmt("%d", points)); }
       _ { fail }
     }
 }

@@ -107,7 +107,7 @@ fn human(init: state::state, engine: game_tree) {
                     stepped(newstate) {
                         vec::push(hist, extract_step_result(newstate));
                     }
-                    endgame(_, score) {
+                    endgame(score) {
                         io::println(#fmt("Finished with %d points.", score));
                         io::println(str::concat(vec::map(moves, |m| { m.to_str() })));
                         break;

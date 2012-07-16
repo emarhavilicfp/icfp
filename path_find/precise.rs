@@ -45,9 +45,9 @@ fn path_apply(p: path::path, +st: state::state, strict: bool)
                 st_ = state::extract_step_result(st__);
                 vec::push(moves, the_move);
               }
-              state::endgame(state, score) {
+              state::endgame(score) {
                   vec::push(moves, the_move);
-                  ret (moves, state::endgame(state, score))
+                  ret (moves, state::endgame(score))
               }
               state::oops(s_) { ret (moves, state::oops(s_))  }
           }

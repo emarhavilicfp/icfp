@@ -75,7 +75,7 @@ fn apply(p: path, st: state::state, strict: bool) -> state::step_result {
               state::stepped(st__) {
                 st_ = state::extract_step_result(st__);
               }
-              state::endgame(state, score) { ret state::endgame(state, score) }
+              state::endgame(score) { ret state::endgame(score) }
               state::oops(s_) { ret state::oops(s_) }
           }
     }
@@ -221,7 +221,6 @@ fn get_passable_neighbors(p: state::coord,
         alt get_square(l, b) {
           state::empty | state::earth |
           state::lambda { true }
-          state::lift_o { true }
           _ { false}
         }})
 }
