@@ -10,7 +10,7 @@ fn eval_severe_dropoff(old_score: int, new_score: int) -> bool {
     old_score * 6 > new_score * 10
 }
 
-const bird_in_hand_multiplier: int = 3;
+const bird_in_hand_multiplier: int = 4;
 
 const worklist_bufsize: uint = 1048576;
 const worklist_sorted: bool = false;
