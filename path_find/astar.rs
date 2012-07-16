@@ -91,9 +91,10 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
             /* TODO lift this somewhere and better heuristics */
             alt s.grid.at(b) {
                 state::earth |
-                state::empty { c = 5 }
-                state::razor { c = 4 }
-                state::lambda { c = 3 }
+                state::empty { c = 10 }
+                state::razor { c = 8 }
+                state::lambda { c = 6 }
+                state::lift_o { ret 1; }
                 _ { ret 0; }
             }
 
@@ -135,7 +136,12 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
     fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
         alt path::apply(_ml, _s, false) {
             state::stepped(state) { some(state::extract_step_result(state)) }
-            state::endgame(*) | state::oops(_) { none } // XXX fix endgame
+            state::endgame(score) { 
+                let end = {score: score with _s}
+                do end.grid.squares_i |__s, c| { end.grid.set(c, state::wall) }
+                ret end;
+            }
+            state::oops(_) { none } // XXX fix endgame
         }
     }
 
