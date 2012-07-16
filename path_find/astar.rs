@@ -137,9 +137,9 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
         alt path::apply(_ml, _s, false) {
             state::stepped(state) { some(state::extract_step_result(state)) }
             state::endgame(score) { 
-                let end = {score: score with _s}
+                let end = {score: score with _s};
                 do end.grid.squares_i |__s, c| { end.grid.set(c, state::wall) }
-                ret end;
+                ret some(end);
             }
             state::oops(_) { none } // XXX fix endgame
         }
