@@ -21,9 +21,7 @@ impl of path_find for u {
     fn handle_imp_path(s : state::state, imp_path : path::path)
         -> option<(state::state, path::path)>
     {
-        #error["trying path: %?", imp_path];
         let (applied_path, step_result) = path_apply(imp_path, copy s, true);
-        #error["successfully applied: %?", applied_path];
         alt step_result {
             state::stepped(s_) { some((state::extract_step_result(copy s_), imp_path)) }
             state::endgame(*) { none } // XXX maybe wrong?
