@@ -194,7 +194,7 @@ fn add_work(-x: work_item_list, greed_depth_total: uint, o: search_opts) {
         let suffix = @mut ~[];
         vec::reserve(*suffix, len-pos);
         let mut i = len-1;
-        #error["%u", i];
+        //#error["%u", i];
         while (i >= pos) {
             assert i >= 0; assert i < len;
             vec::push(*suffix, tuple::first(greedie[i]));
@@ -203,7 +203,7 @@ fn add_work(-x: work_item_list, greed_depth_total: uint, o: search_opts) {
         // Insert work.
         let work: work =
             { prefix: moves_to_horizon, suffix: suffix, eval: eval };
-        #error["CARGOMAX: adding work with score %d", eval];
+        //#error["CARGOMAX: adding work with score %d", eval];
         if heuristics::worklist_sorted {
             fail; // TODO: implement
         } else {
@@ -291,6 +291,7 @@ fn process_work(-s_: state::state, w: work, o: search_opts) -> cargomax {
     }
     let result = search_horizon(option::unwrap(s), o);
     o.move_stack = @dvec::dvec();
+    task::yield();
     (result,(w.prefix,w.suffix))
 }
 
@@ -300,19 +301,19 @@ fn run_workqueue(-s: state::state, o: search_opts) -> cargomax {
         (greedy_all(copy s, { killable: false with o }),(@~[],@mut~[]));
     while !worklist.is_empty() && !(signal::signal_received() && o.killable) {
         let work: work = worklist.pop().get();
-        #error["CARGOMAX: Processing work @ depth %u with estimated score %d",
-               work.prefix.len() + work.suffix.len(), work.eval];
+        //#error["CARGOMAX: Processing work @ depth %u with estimated score %d",
+               //work.prefix.len() + work.suffix.len(), work.eval];
         let result = process_work(copy s, work, o);
         if (score_result(result) > score_result(best_result)) {
-            #error["CARGOMAX: Found new best %d", score_result(result)];
+            //#error["CARGOMAX: Found new best %d", score_result(result)];
             best_result = result;
         }
         // The searcher builds the worklist for the next depth, stratified.
         // This could maybe be better if different. FIXME try it?
         if worklist.is_empty() {
             worklist <-> o.work_list;
-            #error["CARGOMAX: Advancing depth; best so far %d",
-                   score_result(best_result)];
+            //#error["CARGOMAX: Advancing depth; best so far %d",
+                   //score_result(best_result)];
         }
     }
     best_result
@@ -330,9 +331,9 @@ impl of game_tree for search_opts {
         vec::push_all(moves, vec::concat(*suffix));
         let paths = dvec::unwrap(moves_rev);
         vec::reverse(paths);
-        #error["CARGOMAX: # of path chunks %u", paths.len()];
+        //#error["CARGOMAX: # of path chunks %u", paths.len()];
         for paths.each |path| {
-            #error["CARGOMAX: path chunk len %u", path.len()];
+            //#error["CARGOMAX: path chunk len %u", path.len()];
             vec::push_all(moves, path);
         }
         vec::push(moves, state::A);
@@ -343,68 +344,3 @@ impl of game_tree for search_opts {
 fn mk(o: search_opts) -> game_tree {
     (copy o) as game_tree
 }
-/*
-mod test {
-    #[test]
-    fn test_play_game_check_hash() {
-        let s = #include_str("../maps/contest10.map");
-        let mut s = state::read_board(io::str_reader(s));
-        let mut thunk = path_find::brushfire::mk().get_paths(s);
-        let mut result = thunk();
-        while result != none {
-            let (newstate, _path) = option::unwrap(result);
-            assert newstate.hash() == newstate.rehash();
-            s = newstate;
-            thunk = path_find::brushfire::mk().get_paths(s);
-            result = thunk();
-        }
-    }
-    #[test]
-    fn test_zero_depth_equals_greedy() {
-        let s = #include_str("../maps/contest10.map");
-        let mut s = state::read_board(io::str_reader(s));
-        let (_, endstate, score) = greedy_all(copy s, default_opts());
-        let (_, endstate2, score2) = search(copy s, 0, default_opts_bfac(0));
-        let (_, endstate3, score3) = search(s, 0, default_opts_bfac(31337));
-        assert endstate.grid.hash == endstate2.grid.hash;
-        assert endstate.grid.hash == endstate3.grid.hash;
-        assert score == score2;
-        assert score == score3;
-    }
-    #[test]
-    fn test_one_bf_equals_greedy() {
-        let s = #include_str("../maps/contest10.map");
-        let mut s = state::read_board(io::str_reader(s));
-        let (_, endstate, score) = greedy_all(copy s, default_opts());
-        let (_, endstate2, score2) = search(copy s, 1, default_opts_bfac(1));
-        let (_, endstate3, score3) = search(copy s, 10, default_opts_bfac(1));
-        let (_, endstate4, score4) = search(s, 31337, default_opts_bfac(1));
-        assert endstate.grid.hash == endstate2.grid.hash;
-        assert endstate.grid.hash == endstate3.grid.hash;
-        assert endstate.grid.hash == endstate4.grid.hash;
-        assert score == score2;
-        assert score == score3;
-        assert score == score4;
-    }
-    #[cfg(test)]
-    fn test_search_vs_greedy(mapstr: str, depth: uint, bf: uint) {
-        let mut s = state::read_board(io::str_reader(mapstr));
-        let (_, endstate, score) = greedy_all(copy s, default_opts());
-        let (_, endstate2, score2) = search(s, depth, default_opts_bfac(bf));
-        #error["Search @ depth %u bfac %u beat greedy %d-%d",
-               depth, bf, score2, score];
-        if score2 == score {
-            assert endstate.grid.hash == endstate2.grid.hash;
-        }
-        assert score2 > score;
-    }
-    #[test]
-    fn test_search_beats_greedy() {
-        // 5 seems to be the min branch depth. Guess we find it on the 5th
-        // closest lambda.
-        test_search_vs_greedy(#include_str("../maps/contest5.map"), 1, 5);
-        test_search_vs_greedy(#include_str("../maps/contest5.map"), 2, 5);
-        test_search_vs_greedy(#include_str("../maps/contest5.map"), 3, 5);
-    }
-}
-*/

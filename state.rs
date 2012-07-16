@@ -319,6 +319,16 @@ impl of to_str::to_str for move {
     }
 }
 
+impl of to_str::to_str for &[move] {
+    fn to_str() -> str {
+        let mut s = "";
+        for self.each |m| {
+            s += m.to_str();
+        };
+        s
+    }
+}
+
 fn tramp_to_str(i: int) -> str {
     str::from_char((i + 'A' as int - 1) as char)
 }
