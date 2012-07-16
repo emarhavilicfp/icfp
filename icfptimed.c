@@ -22,14 +22,14 @@ int main(int argc, char **argv)
 			perror("execv");
 	} else if (pid > 0) {
 		int rv;
-		alarm(10);
+		alarm(30);
 		rv = wait(NULL);
 		if (rv > 0)
 			return 0;
 		kill(pid, 2);
 		fprintf(stderr, "Your time has ended!!  SIGINT!\n");
 		
-		alarm(10);
+		alarm(30);
 		rv = wait(NULL);
 		if (rv > 0)
 			return 0;
