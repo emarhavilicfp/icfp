@@ -113,6 +113,25 @@ impl extensions for square {
             empty { 13u }
         }
     }
+
+    #[inline(always)]
+    fn eq(rhs: square) -> bool {
+        alt (self, rhs) {
+          (bot, bot) | (wall, wall) | (rock, rock) | (lambda, lambda) |
+          (lift_c, lift_c) | (lift_o, lift_o) | (earth, earth) |
+          (razor, razor) | (horock, horock) | (empty, empty) { true }
+          
+          (trampoline(i), trampoline(j)) | (target(i), target(j)) |
+          (beard(i), beard(j)) { i == j }
+
+          _ { false }
+        }      
+    }
+
+    #[inline(always)]
+    fn neq(rhs: square) -> bool {
+        !self.eq(rhs)
+    }
 }
 
 impl extensions for hash_keys {
@@ -591,7 +610,7 @@ impl extensions for state {
           }
           rock | horock {
             if xp == x + 1 && yp == y &&
-               grid_.at((x+2, y)) == empty {
+               grid_.at((x+2, y)).eq(empty) {
                 grid_.set((x+2, yp), sq);
                 grid.set((x+2, yp), sq);
                 (xp, yp)
@@ -683,24 +702,24 @@ impl extensions for state {
           let (sx, sy) = c;
           alt sq {
             rock | horock {
-              let isrock = |s: square| { s == rock || s == horock };
+              let isrock = |s: square| { s.eq(rock) || s.eq(horock) };
               let mut c_ = c;
 
-              if grid.at((sx, sy-1)) == empty {
+              if grid.at((sx, sy-1)).eq(empty) {
                   c_ = (sx, sy-1);
               } else if isrock(grid.at((sx, sy-1))) &&
-                        grid.at((sx+1, sy)) == empty &&
-                        grid.at((sx+1, sy-1)) == empty {
+                        grid.at((sx+1, sy)).eq(empty) &&
+                        grid.at((sx+1, sy-1)).eq(empty) {
                   c_ = (sx+1, sy-1);
               } else if isrock(grid.at((sx, sy-1))) &&
-                        (grid.at((sx+1, sy)) != empty ||
-                         grid.at((sx+1, sy-1)) != empty) &&
-                        grid.at((sx-1, sy)) == empty &&
-                        grid.at((sx-1, sy-1)) == empty {
+                        (grid.at((sx+1, sy)).neq(empty) ||
+                         grid.at((sx+1, sy-1)).neq(empty) &&
+                        grid.at((sx-1, sy)).eq(empty) &&
+                        grid.at((sx-1, sy-1)).eq(empty)) {
                   c_ = (sx-1, sy-1);
-              } else if grid.at((sx, sy-1)) == lambda &&
-                        grid.at((sx+1, sy)) == empty &&
-                        grid.at((sx+1, sy-1)) == empty {
+              } else if grid.at((sx, sy-1)).eq(lambda) &&
+                        grid.at((sx+1, sy)).eq(empty) &&
+                        grid.at((sx+1, sy-1)).eq(empty) {
                   c_ = (sx+1, sy-1);
               }
 
