@@ -9,3 +9,5 @@ negative constants don't work
 std::test should have a way to mark expected values
 
 test cases that have the same name don't do what they should
+
+A common idiom is "while x.is_some() { x.get() .. x = ..; }". Encapsulate?
