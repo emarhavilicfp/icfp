@@ -23,6 +23,7 @@ impl of path_find for t {
         for s.grid.lambdas().each |target| {
             pqins(targets, target, state::taxicab_distance(s.robotpos, target));
         }
+        //let targets = dlist::from_vec(s.grid.lambdas().map(|x| (1, x));
 
         fn @() -> option<(state::state, path::path)> {
             loop {
@@ -83,9 +84,9 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
     fn eqcoord(a: state::coord, b: state::coord) -> bool {
         a == b
     }
-    fn mk_cost(s: state::state) -> (fn@(state::coord, state::coord) -> uint) {
+    fn mk_cost(s: state::state) -> (fn@(state::coord, state::coord, state::move) -> uint) {
         let h = s.grid.grid.len();
-        fn @(a:state::coord, b:state::coord, copy s) -> uint {
+        fn @(a:state::coord, b:state::coord, m:state::move, copy s) -> uint {
             let mut c;
             /* TODO lift this somewhere and better heuristics */
             alt s.grid.at(b) {
@@ -100,7 +101,10 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
             if (ay < h &&
                 s.grid.at((ax, ay + 1)) == state::rock) {
                 /* We are moving out from under a boulder */
-                c += 3;
+                alt m {
+                    state::D { /*Death*/ret 0; }
+                    _ { c += 5; }
+                }
             }
 
             ret c;
@@ -184,7 +188,7 @@ fn navigar(s: state::state, dest: state::coord) -> option<(state::state, path::p
                 again;
             }
 
-            let tempcost = cost(spot_, n);
+            let tempcost = cost(spot_, n, m_);
             if (tempcost == 0) {
                 again;
             }
