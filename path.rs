@@ -76,7 +76,7 @@ fn apply(p: path, +st: state::state, strict: bool) -> state::step_result {
                 st_ = state::extract_step_result(st__);
               }
               state::endgame(score) { ret state::endgame(score) }
-              state::oops { ret state::oops }
+              state::oops(s_) { ret state::oops(s_) }
           }
     }
     ret state::stepped(@mut some(st_));

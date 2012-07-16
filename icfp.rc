@@ -29,6 +29,7 @@ mod heuristics;
 mod path_find;
 mod path_find {
     mod brushfire;
+    mod precise;
 }
 
 mod game_tree;

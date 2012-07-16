@@ -51,7 +51,7 @@ fn path_len(p: path::path) -> uint { vec::len(p) }
 fn state_apply(_s: state::state, _ml: path::path) -> option<state::state> {
     alt path::apply(_ml, _s, false) {
         state::stepped(state) { some(state::extract_step_result(state)) }
-        state::endgame(*) | state::oops { none } // XXX fix endgame
+        state::endgame(*) | state::oops(_) { none } // XXX fix endgame
     }
 }
 

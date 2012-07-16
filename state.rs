@@ -506,7 +506,7 @@ fn read_board(+in: io::reader) -> state {
 enum step_result {
     stepped(@mut option<state>),
     endgame(int), /* points */
-    oops /* accidental death or illegal move */
+    oops(@state) /* accidental death or illegal move */
 }
 
 fn extract_step_result(x: @mut option<state>) -> state {
@@ -570,7 +570,7 @@ impl extensions for state {
                 grid.set((x-2, yp), sq);
                 (xp, yp)
             } else {
-                if strict { ret oops }
+                if strict { ret oops(@copy self) }
                 (x, y)
             }
           }
@@ -601,7 +601,7 @@ impl extensions for state {
               (xp, yp)
           }
 
-          _ { if strict {ret oops}; (x, y) }
+          _ { if strict {ret oops(@copy self)}; (x, y) }
         };
 
         /* non-location side effects */
@@ -725,7 +725,7 @@ impl extensions for state {
         }
         
         if underwater_ > self.waterproof {
-            if strict { ret oops; }
+            if strict { ret oops(@copy self); }
             ret endgame(score_);
         }
 
@@ -736,7 +736,7 @@ impl extensions for state {
 
         /* Check to see if rocks fall *after* we could have successfully taken the lambda lift. */
         if *rocks_fall {
-            if strict { ret oops; }
+            if strict { ret oops(@copy self); }
             ret endgame(score_);
         }
 

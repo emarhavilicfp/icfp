@@ -25,6 +25,7 @@ fn main(args: ~[str]) {
     signal::init();
     
     let path_find = path_find::brushfire::mk();
+    let path_find = path_find::precise::mk(path_find);
     let engine = alt os::getenv("ENGINE") {
       some("simple") { game_tree::simple::mk(path_find) }
       some("tobruos") { game_tree::tobruos::mk(path_find) }
@@ -105,7 +106,7 @@ fn human(init: state::state, engine: game_tree) {
                         io::println(str::concat(vec::map(moves, |m| { m.to_str() })));
                         break;
                     }
-                    oops { io::println("Oops.  Bye."); break; }
+                    oops(newstate) { io::println("Oops.  Bye."); break; }
                 }
             }
             none { }
