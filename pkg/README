@@ -1,3 +1,4 @@
+================================================
 ==== Emarhavil Heavy Functional Programming ====
 ================================================
 
@@ -64,20 +65,82 @@ on each map, using Rust tasks (the built-in unit of parallelism). An
 "octopus" at the top level spawns and collects the results of each
 algorithm and chooses the highest-scoring one.
 
+We spent too much time on search and too little time on backend. 
+
 GAME TREE SEARCH
 ----------------
 
 All of our game tree searches are granular at the level of "paths between
 targets". A target is a lambda, an open lambda lift, a razor, a horock,
-etc (except we have no strategy code for razors and horocks).
+etc (except we have no strategy code for razors and horocks). In general,
+at any search node (i.e., right after we picked something up), we
+consider paths to next reachable targets and decide which ones to pursue.
 
     GREEDY. 
 
+The greedy algorithm always uses the path to the closest lambda. All
+other search algorithms are equivalent to it if their branch factor is
+set to 1.
+
     ITERATIVE DEEPENING.
+
+The iterative deepening algorithm iterates depth=1,2,3... until time runs
+out, branching at the first 'depth' decision points. When it reaches
+'depth', it falls back to greedy to complete the rest of the search.
 
     TOBRUOS.
 
     CARGOMAX.
+
+Cargomax was designed to fix iterative deepening's weakness of only
+finding better alternatives at the start of the game (i.e., since it
+always does greedy after the horizon, it is unable to fix late-game
+greedy mistakes).
+
+The basic idea behind Cargomax is to interleave greedy and branching.
+While an iterative deepening tree looks like this:
+                  ____________________
+                 /\___________________
+                /\_________________________
+                \  _______________
+                 \/ ___________________
+                  \/________________
+                   \______________
+
+a Cargomax tree should look more like this:
+                                         _________
+                   _____________________/_____
+         _________/___________________
+        /         \__________________________
+        \          ______________
+         \________/           _______________
+                  \__________/            ______
+                             \___________/_______
+
+Cargomax uses a workqueue model for doing sort-of-breadth-first-search.
+Every branch point is a horizon branch point, at which greedy finishes
+the game. During greedy, we heuristically evaluate the state at each
+target, and cause the next branch point to appear at the maximally
+evaluated point (i.e., detect "where it all went wrong" and avoid it).
+
+After finishing searching at each branch point, we compute the average
+path length of all greedy-finishes, then trim it by a heuristic constant
+(cargomax_munge_avg_depth). Then on each branch we find the maximum point
+between the start and that depth, i.e.:
+
+      _ 1 2 3 4 5* 4 3 2
+     /
+    /__ 9* 8 7 6 1 0 0
+    \
+     \_ 1 1 3 5 
+
+"Cargomax" is a five-way pun.
+ - "Cargo" alludes to carrying lambdas around.
+ - "Cargo" is Rust's build system (and "crates" are compilation units).
+ - "Max", a generic search algorithm name.
+ - "Cargofax" is the name of our test arena.
+ - "Vargomax" - see http://www.youtube.com/watch?v=HhGI-GqAK9c (created
+   by one of our friends over on the Cult of the Bound Variable team)
 
 PATHING
 -------
