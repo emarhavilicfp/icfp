@@ -72,7 +72,7 @@ fn human(init: state::state, engine: game_tree) {
                     }
                     none {
                         bot_n = 0;
-                        let plan = engine.get_path(copy init);
+                        let plan = engine.get_path(copy state);
                         move = plan[bot_n];
                         robot_plan = some(plan);
                     }
