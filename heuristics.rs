@@ -12,6 +12,9 @@ fn eval_severe_dropoff(old_score: int, new_score: int) -> bool {
 
 const bird_in_hand_multiplier: int = 2;
 
+const worklist_bufsize: uint = 1048576;
+const worklist_sorted: bool = false;
+
 // move ordering (trivial)
 // water check in trans table
 // dirt in trans table?
