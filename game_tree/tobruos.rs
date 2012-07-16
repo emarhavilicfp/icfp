@@ -24,13 +24,14 @@ fn get_path(opts: settings, +s: state::state) -> ~[state::move] {
     let mut depth = 0u;
     
     while !signal::signal_received() && depth < 50 /* We're probably not getting much better from there. */ {
-    	#error["tobruos: here we go with depth %u", depth];
+    	#debug["tobruos: here we go with depth %u", depth];
         /* Do a top-level search on an increasing depth. */
         let (path, score) = get_path_depth(opts, copy s, depth);
         if score > bestscore {
             bestpath = path;
             bestscore = score;
         }
+        #debug["tobruos: depth %u done; best score %d (this: %d)", depth, bestscore, score];
         depth = depth+1;
     }
     
@@ -39,28 +40,25 @@ fn get_path(opts: settings, +s: state::state) -> ~[state::move] {
 
 fn get_path_depth(opts: settings, +s: state::state, depth: uint) -> (~[state::move], int) {
     /* Now just keep getting the best choice, and sticking it on the end. */
-    let mut result = get_best_top_option(opts, s, depth);
     let mut fullpath = ~[];
     let mut state = s;
-    while result != none && !signal::signal_received() {
-        let path = option::unwrap(result);
+    #debug["tobruos: trying with path depth %u", depth];
+    while !signal::signal_received() {
+        #debug["tobruos:    trying to make the next move..."];
+        let result = get_best_top_option(opts, state, depth);
+        let (path, newst) = alt result {
+          some((p, ns)) { (p, ns) }
+          none { break }
+        };
         fullpath = vec::append(fullpath, path);
-        
-        /* Come up with the new state. */
-        for path.each |mv| {
-            alt state.step(mv, false) {
-              state::stepped(s) { state = state::extract_step_result(s) }
-              state::endgame(pts) { ret (fullpath, pts) }
-              _ { fail }
-            }
-        }
-        result = get_best_top_option(opts, state, depth)
+        #debug["tobruos:    came back with a best score of %d, path length of %u", state.score, fullpath.len()];
+        state = newst;
     }
     (fullpath, state.score)
 }
 
 /* Given a state, given the best top-level choice we can make, looking depth steps ahead. */
-fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<~[state::move]> {
+fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<(~[state::move], state::state)> {
     let mut bestpath = none;
     let mut bestscore = 0;
     
@@ -68,9 +66,20 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<~
     
     /* Prime it with a path thunk to pull on. */
     let rootthunk = opts.path_find.get_paths(s);
-    let mut curroot = rootthunk();
-    while curroot != none {
-        let (st, rootpath) = option::unwrap(curroot);
+    loop {
+        let curroot = rootthunk();
+        let (st, rootpath) = alt curroot {
+          some(r) { r }
+          none { break }
+        };
+        #debug["tobruos:      root thunk returned a state of score %d", st.score];
+        let mut scores : u64 = st.score as u64;
+        let mut paths : u64 = 1;
+        let mut bestlocal : u64 = 0;
+        
+        if st.score as u64 > bestlocal {
+            bestlocal = st.score as u64;
+        }
         
         /* We have a root -- start off with the traversal node for that root. */
         vec::push(paththunks, opts.path_find.get_paths(st));
@@ -85,15 +94,21 @@ fn get_best_top_option(opts: settings, s: state::state, depth: uint) -> option<~
                 if paththunks.len() < depth { /* Say what again. */
                     vec::push(paththunks, opts.path_find.get_paths(news)); 
                 }
+                scores = scores + news.score as u64;
+                paths = paths + 1;
                 
-                if news.score > bestscore { /* Then you know what I'm sayin'! */
-                    bestpath = some(rootpath);
-                    bestscore = news.score;
+                if news.score as u64 > bestlocal { /* Then you know what I'm sayin'! */
+                    bestlocal = news.score as u64;
                 }
               }
             }
         }
-        curroot = rootthunk();
+        
+        let rootscore = scores / paths + bestlocal * 3;
+        if rootscore > bestscore {
+            bestscore = rootscore;
+            bestpath = some((rootpath, st));
+        }
     }
     
     bestpath
