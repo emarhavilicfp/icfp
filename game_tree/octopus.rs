@@ -64,6 +64,12 @@ class octopus : game_tree {
             };
 
             vec::push(futures, future::spawn(|move engine, copy g| {
+                extern mod rustrt {
+                    fn unsupervise();
+                }
+
+                rustrt::unsupervise();
+
                 let g = g();
                 let engine = engine();
                 let path = engine.get_path(copy g);
