@@ -9,11 +9,16 @@ int main(int argc, char **argv)
 {
 	int pid;
 	struct sigaction act;
+	int inttime = 30;
+	int killtime = 5;
 	
 	act.sa_flags = 0;
 	sigemptyset(&act.sa_mask);
 	act.sa_handler = _handler;
 	sigaction(SIGALRM, &act, NULL);
+	
+	if (getenv("LONG_RUN"))
+		inttime = 150;
 	
 	pid = fork();
 	if (pid == 0) {
@@ -22,14 +27,14 @@ int main(int argc, char **argv)
 			perror("execv");
 	} else if (pid > 0) {
 		int rv;
-		alarm(30);
+		alarm(inttime);
 		rv = wait(NULL);
 		if (rv > 0)
 			return 0;
 		kill(pid, 2);
 		fprintf(stderr, "Your time has ended!!  SIGINT!\n");
 		
-		alarm(30);
+		alarm(killtime);
 		rv = wait(NULL);
 		if (rv > 0)
 			return 0;
